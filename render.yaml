@@ -2,7 +2,7 @@ services:
   - type: web
     name: icasa-geo
     env: python
-    buildCommand: "cd icasa_geo_kb && pip install -r ../requirements_render.txt && python manage.py collectstatic --noinput && python manage.py migrate && python create_superuser.py"
+    buildCommand: "cd icasa_geo_kb && pip install -r ../requirements_render.txt && python setup_sqlite_data.py && python manage.py collectstatic --noinput"
     startCommand: "cd icasa_geo_kb && gunicorn icasa_geo.wsgi:application --bind 0.0.0.0:$PORT"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
