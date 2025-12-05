@@ -2,12 +2,19 @@ services:
   - type: web
     name: icasa-geo
     env: python
-    buildCommand: "cd icasa_geo_kb && pip install -r ../requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
-    startCommand: "cd icasa_geo_kb && python manage.py runserver 0.0.0.0:$PORT"
+    buildCommand: "cd icasa_geo_kb && pip install -r ../requirements_render.txt && python manage.py collectstatic --noinput && python manage.py migrate && python create_superuser.py"
+    startCommand: "cd icasa_geo_kb && gunicorn icasa_geo.wsgi:application --bind 0.0.0.0:$PORT"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: icasa_geo.settings
       - key: DEBUG
         value: "False"
       - key: ALLOWED_HOSTS
-        value: "*"
+        value: "icasa-geo-sistema.onrender.com"
+      - key: SECRET_KEY
+        generateValue: true
+
+databases:
+  - name: icasa-geo-db
+    databaseName: icasa_geo
+    user: icasa_geo_user
