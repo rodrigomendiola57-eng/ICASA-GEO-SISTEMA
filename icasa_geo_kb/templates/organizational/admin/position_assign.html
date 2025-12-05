@@ -1,0 +1,161 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Asignar Empleado - ICASA-GEO{% endblock %}
+{% block page_title %}👤 Asignar Empleado{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-lg shadow-md">
+        <!-- Header -->
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">Asignar Empleado</h2>
+                    <p class="text-gray-600">Puesto: <span class="font-semibold">{{ position.title }}</span></p>
+                    <p class="text-sm text-gray-500">{{ position.department }} - Nivel {{ position.level }}</p>
+                </div>
+                <a href="{% url 'organizational:position_admin_list' %}" 
+                   class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    <span>Volver</span>
+                </a>
+            </div>
+        </div>
+        
+        {% if available_employees %}
+        <!-- Formulario de asignación -->
+        <form method="post" class="p-6">
+            {% csrf_token %}
+            
+            <!-- Selección de empleado -->
+            <div class="mb-6">
+                <label for="employee_id" class="block text-sm font-medium text-gray-700 mb-2">
+                    Seleccionar Empleado <span class="text-red-500">*</span>
+                </label>
+                <select id="employee_id" 
+                        name="employee_id" 
+                        required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    <option value="">Seleccionar empleado disponible</option>
+                    {% for employee in available_employees %}
+                    <option value="{{ employee.id }}">
+                        {{ employee.first_name }} {{ employee.last_name }} ({{ employee.employee_id }})
+                    </option>
+                    {% endfor %}
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Solo se muestran empleados sin asignación activa</p>
+            </div>
+            
+            <!-- Fecha de inicio -->
+            <div class="mb-6">
+                <label for="start_date" class="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha de Inicio <span class="text-red-500">*</span>
+                </label>
+                <input type="date" 
+                       id="start_date" 
+                       name="start_date" 
+                       value="{% now 'Y-m-d' %}"
+                       required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+            </div>
+            
+            <!-- Tipo de asignación -->
+            <div class="mb-6">
+                <label for="assignment_type" class="block text-sm font-medium text-gray-700 mb-2">
+                    Tipo de Asignación
+                </label>
+                <select id="assignment_type" 
+                        name="assignment_type"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    <option value="permanent">Permanente</option>
+                    <option value="temporary">Temporal</option>
+                    <option value="interim">Interino</option>
+                </select>
+            </div>
+            
+            <!-- Vista previa de empleados disponibles -->
+            <div class="mb-6">
+                <h3 class="text-sm font-medium text-gray-700 mb-3">Empleados Disponibles ({{ available_employees|length }})</h3>
+                <div class="max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
+                    {% for employee in available_employees %}
+                    <div class="p-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 cursor-pointer employee-option" 
+                         data-employee-id="{{ employee.id }}"
+                         onclick="selectEmployee({{ employee.id }})">
+                        <div class="flex items-center">
+                            {% if employee.photo %}
+                                <img class="h-10 w-10 rounded-full" src="{{ employee.photo.url }}" alt="{{ employee.first_name }}">
+                            {% else %}
+                                <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                            {% endif %}
+                            <div class="ml-3">
+                                <div class="text-sm font-medium text-gray-900">{{ employee.first_name }} {{ employee.last_name }}</div>
+                                <div class="text-sm text-gray-500">ID: {{ employee.employee_id }} | Email: {{ employee.email }}</div>
+                                <div class="text-xs text-gray-400">Ingreso: {{ employee.hire_date|date:"d/m/Y" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Botones de acción -->
+            <div class="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+                <a href="{% url 'organizational:position_admin_list' %}" 
+                   class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-2 rounded-lg transition-colors">
+                    Cancelar
+                </a>
+                <button type="submit" 
+                        class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                    </svg>
+                    <span>Asignar Empleado</span>
+                </button>
+            </div>
+        </form>
+        
+        {% else %}
+        <!-- No hay empleados disponibles -->
+        <div class="p-6 text-center">
+            <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No hay empleados disponibles</h3>
+            <p class="text-gray-600 mb-4">Todos los empleados activos ya tienen asignaciones en otros puestos.</p>
+            <div class="space-y-2">
+                <a href="{% url 'organizational:position_admin_list' %}" 
+                   class="inline-block bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
+                    Volver a la Lista
+                </a>
+                <p class="text-sm text-gray-500">
+                    Para asignar un empleado, primero debe desasignarlo de su puesto actual.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function selectEmployee(employeeId) {
+    // Remover selección previa
+    document.querySelectorAll('.employee-option').forEach(el => {
+        el.classList.remove('bg-green-50', 'border-green-200');
+    });
+    
+    // Seleccionar empleado
+    const selectedOption = document.querySelector(`[data-employee-id="${employeeId}"]`);
+    selectedOption.classList.add('bg-green-50', 'border-green-200');
+    
+    // Actualizar select
+    document.getElementById('employee_id').value = employeeId;
+}
+</script>
+{% endblock %}

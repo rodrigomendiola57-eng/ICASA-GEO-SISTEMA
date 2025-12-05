@@ -1,0 +1,439 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}📊 Demo - Organigramas por Departamento - ICASA-GEO{% endblock %}
+{% block page_title %}📊 Demo - Organigramas por Departamento{% endblock %}
+
+{% block content %}
+<div class="h-screen flex flex-col">
+    <!-- BARRA SUPERIOR SIMPLE -->
+    <div class="bg-white border-b border-gray-200 p-4 flex-shrink-0">
+        <div class="flex items-center justify-between">
+            <!-- Título y Descripción -->
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">📊 Demo - Organigramas por Departamento</h1>
+                <p class="text-gray-600">Demostración del gestor de organigramas de ICASA (datos en memoria)</p>
+            </div>
+            
+            <!-- Acciones Principales -->
+            <div class="flex items-center space-x-3">
+                <a href="{% url 'organizational:interactive_organigram' %}" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                    🎨 Editor Completo
+                </a>
+                <button onclick="showCreateModal()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    ➕ Crear Organigrama
+                </button>
+                <button onclick="showUploadModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    📁 Subir Archivo
+                </button>
+                <button onclick="refreshData()" class="bg-slate-600 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors">
+                    🔄 Actualizar
+                </button>
+            </div>
+        </div>
+        
+        <!-- Filtros por Departamento -->
+        <div class="mt-4 flex items-center space-x-4">
+            <label class="text-sm font-medium text-gray-700">Filtrar por departamento:</label>
+            <select id="departmentFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500" onchange="filterByDepartment()">
+                <option value="">Todos los departamentos</option>
+                {% for dept in available_departments %}
+                    <option value="{{ dept }}">{{ dept }}</option>
+                {% endfor %}
+            </select>
+            
+            <div class="flex-1"></div>
+            
+            <!-- Estadísticas Dinámicas -->
+            <div class="flex items-center space-x-6 text-sm">
+                <div class="text-center">
+                    <span class="font-bold text-blue-600">{{ total_charts }}</span>
+                    <span class="text-gray-600 ml-1">Organigramas</span>
+                </div>
+                <div class="text-center">
+                    <span class="font-bold text-green-600">{{ active_charts }}</span>
+                    <span class="text-gray-600 ml-1">Activos</span>
+                </div>
+                <div class="text-center">
+                    <span class="font-bold text-purple-600">{{ departments_with_charts }}</span>
+                    <span class="text-gray-600 ml-1">Departamentos</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenedor Principal -->
+    <div class="flex-1 overflow-hidden">
+        <!-- Galería de Organigramas -->
+        <div class="w-full h-full bg-gray-50 p-6" id="organigramGallery">
+            <!-- Grid de Organigramas -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="organigramGrid">
+                <!-- Organigramas existentes desde el backend -->
+                {% for department, charts in charts_by_department.items %}
+                    {% for chart in charts %}
+                        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onclick="openChart({{ chart.id }})">
+                            <div class="h-48 bg-gradient-to-br 
+                                {% if department == 'Administrativo' %}from-blue-500 to-blue-600
+                                {% elif department == 'Comercial' %}from-green-500 to-green-600
+                                {% elif department == 'Operaciones' %}from-purple-500 to-purple-600
+                                {% elif department == 'RRHH' %}from-pink-500 to-pink-600
+                                {% elif department == 'Finanzas' %}from-yellow-500 to-yellow-600
+                                {% elif department == 'Mantenimiento' %}from-red-500 to-red-600
+                                {% else %}from-gray-500 to-gray-600{% endif %}
+                                flex items-center justify-center">
+                                <div class="text-center text-white">
+                                    <svg class="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <h3 class="text-lg font-semibold">{{ department }}</h3>
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <p class="text-sm text-gray-600 mb-2">{{ chart.name }}</p>
+                                <div class="flex items-center justify-between text-xs text-gray-500">
+                                    <span>{{ chart.updated_at|date:"d/m/Y" }}</span>
+                                    <span class="px-2 py-1 rounded-full
+                                        {% if chart.status == 'active' %}bg-green-100 text-green-800
+                                        {% elif chart.status == 'draft' %}bg-yellow-100 text-yellow-800
+                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {% if chart.status == 'active' %}Activo
+                                        {% elif chart.status == 'draft' %}Borrador
+                                        {% else %}Archivado{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% empty %}
+                    <!-- Mensaje cuando no hay organigramas -->
+                    <div class="col-span-full text-center py-12">
+                        <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No hay organigramas</h3>
+                        <p class="text-gray-500 mb-4">Comienza creando tu primer organigrama departamental</p>
+                        <button onclick="showCreateModal()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                            ➕ Crear Primer Organigrama
+                        </button>
+                    </div>
+                {% endfor %}
+                
+                <!-- Botón para crear nuevo (siempre visible) -->
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onclick="showCreateModal()">
+                    <div class="h-48 bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center">
+                        <div class="text-center text-white">
+                            <svg class="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            <h3 class="text-lg font-semibold">Crear Nuevo</h3>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-sm text-gray-600 mb-2">Organigrama por departamento</p>
+                        <div class="flex items-center justify-between text-xs text-gray-500">
+                            <span>Nuevo organigrama</span>
+                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Crear</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Crear Organigrama -->
+    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden" id="createModal">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">➕ Crear Organigrama</h3>
+                        <button onclick="hideCreateModal()" class="text-gray-400 hover:text-red-500">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <form onsubmit="createOrganigram(event)">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Organigrama</label>
+                            <input type="text" id="organigramName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Ej: Organigrama Administrativo" required>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Departamento</label>
+                            <select id="organigramDepartment" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                                <option value="">Seleccionar departamento</option>
+                                {% for dept in available_departments %}
+                                    <option value="{{ dept }}">{{ dept }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                            <textarea id="organigramDescription" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" rows="3" placeholder="Descripción del organigrama..."></textarea>
+                        </div>
+                        
+                        <div class="flex space-x-3">
+                            <button type="button" onclick="hideCreateModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                                Crear
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Subir Archivo -->
+    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden" id="uploadModal">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">📁 Subir Organigrama</h3>
+                        <button onclick="hideUploadModal()" class="text-gray-400 hover:text-red-500">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <form onsubmit="uploadOrganigram(event)">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Archivo</label>
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-500 transition-colors">
+                                <input type="file" id="organigramFile" accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx" class="hidden" onchange="handleFileSelect(event)">
+                                <button type="button" onclick="document.getElementById('organigramFile').click()" class="text-green-600 hover:text-green-700">
+                                    <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                    </svg>
+                                    <p class="text-sm">Click para seleccionar archivo</p>
+                                    <p class="text-xs text-gray-500">PDF, PNG, JPG, DOCX, XLSX</p>
+                                </button>
+                                <div id="fileInfo" class="hidden mt-2 text-sm text-gray-600"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Departamento</label>
+                            <select id="uploadDepartment" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                                <option value="">Seleccionar departamento</option>
+                                {% for dept in available_departments %}
+                                    <option value="{{ dept }}">{{ dept }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="flex space-x-3">
+                            <button type="button" onclick="hideUploadModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                Subir
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// FUNCIONES PRINCIPALES
+function showCreateModal() {
+    document.getElementById('createModal').classList.remove('hidden');
+}
+
+function hideCreateModal() {
+    document.getElementById('createModal').classList.add('hidden');
+    document.getElementById('organigramName').value = '';
+    document.getElementById('organigramDepartment').value = '';
+    document.getElementById('organigramDescription').value = '';
+}
+
+function showUploadModal() {
+    document.getElementById('uploadModal').classList.remove('hidden');
+}
+
+function hideUploadModal() {
+    document.getElementById('uploadModal').classList.add('hidden');
+    document.getElementById('organigramFile').value = '';
+    document.getElementById('uploadDepartment').value = '';
+    document.getElementById('fileInfo').classList.add('hidden');
+}
+
+function createOrganigram(event) {
+    event.preventDefault();
+    
+    const name = document.getElementById('organigramName').value;
+    const department = document.getElementById('organigramDepartment').value;
+    const description = document.getElementById('organigramDescription').value;
+    
+    if (!name || !department) {
+        alert('⚠️ Por favor completa todos los campos obligatorios');
+        return;
+    }
+    
+    // Crear FormData
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('department', department);
+    formData.append('description', description);
+    
+    // Enviar a la API de demo
+    fetch('/organizational/demo/api/create/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`✅ ${data.message}`);
+            hideCreateModal();
+            // Recargar la página para mostrar el nuevo organigrama
+            window.location.reload();
+        } else {
+            alert(`❌ Error: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Error al crear el organigrama');
+    });
+}
+
+function uploadOrganigram(event) {
+    event.preventDefault();
+    
+    const file = document.getElementById('organigramFile').files[0];
+    const department = document.getElementById('uploadDepartment').value;
+    
+    if (!file) {
+        alert('⚠️ Por favor selecciona un archivo');
+        return;
+    }
+    
+    if (!department) {
+        alert('⚠️ Por favor selecciona un departamento');
+        return;
+    }
+    
+    // Crear FormData
+    const formData = new FormData();
+    formData.append('chart_file', file);
+    formData.append('department', department);
+    
+    // Mostrar indicador de carga
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Subiendo...';
+    submitBtn.disabled = true;
+    
+    // Enviar a la API de demo
+    fetch('/organizational/demo/api/upload/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`✅ ${data.message}`);
+            hideUploadModal();
+            // Recargar la página para mostrar el nuevo organigrama
+            window.location.reload();
+        } else {
+            alert(`❌ Error: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Error al subir el archivo');
+    })
+    .finally(() => {
+        // Restaurar botón
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+function openChart(chartId) {
+    // Abrir organigrama específico por ID
+    window.location.href = `/organizational/demo/chart/${chartId}/`;
+}
+
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    const fileInfo = document.getElementById('fileInfo');
+    
+    if (file) {
+        fileInfo.textContent = `Archivo seleccionado: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+        fileInfo.classList.remove('hidden');
+    }
+}
+
+function filterByDepartment() {
+    const department = document.getElementById('departmentFilter').value;
+    
+    // Filtrar organigramas por departamento
+    const url = department ? 
+        `/organizational/demo/api/charts/?department=${department}` :
+        '/organizational/demo/api/charts/';
+    
+    fetch(url)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateChartsGrid(data.charts);
+        }
+    })
+    .catch(error => {
+        console.error('Error al filtrar:', error);
+    });
+}
+
+function refreshData() {
+    window.location.reload();
+}
+
+// FUNCIÓN PARA OBTENER CSRF TOKEN
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// INICIALIZACIÓN
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Demo - Gestor de Organigramas por Departamento cargado');
+    
+    // Cerrar modales con Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            hideCreateModal();
+            hideUploadModal();
+        }
+    });
+});
+</script>
+{% endblock %}

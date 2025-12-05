@@ -1,0 +1,1910 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Editor de Fluogramas - ICASA GEO{% endblock %}
+
+{% block extra_head %}
+<script src="https://unpkg.com/mermaid@9.4.3/dist/mermaid.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header del Editor -->
+    <div class="bg-white border-b border-gray-200 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <a href="{% url 'organizational:flowcharts_dashboard' %}" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h1 id="editorTitle" class="text-2xl font-bold text-gray-900">Editor de Fluogramas</h1>
+                    <p id="editorSubtitle" class="text-sm text-gray-500">Crea y edita procesos organizacionales</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <!-- Botones de acción -->
+                <button id="saveBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-save mr-2"></i>Guardar
+                </button>
+                <button id="exportBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-download mr-2"></i>Descargar Imagen
+                </button>
+                <button id="previewBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                    <i class="fas fa-eye mr-2"></i>Vista Previa
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex h-screen">
+        <!-- Panel Izquierdo: Herramientas y Templates -->
+        <div class="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+            <!-- Tabs -->
+            <div class="border-b border-gray-200">
+                <nav class="flex">
+                    <button class="tab-btn active px-4 py-3 text-sm font-medium border-b-2 border-green-500 text-green-600" data-tab="templates">
+                        <i class="fas fa-layer-group mr-2"></i>Templates
+                    </button>
+                    <button class="tab-btn px-4 py-3 text-sm font-medium text-gray-500 hover:text-gray-700" data-tab="elements">
+                        <i class="fas fa-shapes mr-2"></i>Elementos
+                    </button>
+                    <button class="tab-btn px-4 py-3 text-sm font-medium text-gray-500 hover:text-gray-700" data-tab="properties">
+                        <i class="fas fa-tag mr-2"></i>Info
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Templates Tab -->
+            <div id="templates-tab" class="tab-content p-4">
+                <h3 class="font-semibold text-gray-900 mb-3">Templates ICASA</h3>
+                <div class="space-y-2">
+                    <div class="template-item p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50" data-template="proceso-compras">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-shopping-cart text-blue-600 text-sm"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-sm">Proceso de Compras</h4>
+                                <p class="text-xs text-gray-500">Flujo estándar de adquisiciones</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="template-item p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50" data-template="reclutamiento">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-user-plus text-green-600 text-sm"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-sm">Reclutamiento</h4>
+                                <p class="text-xs text-gray-500">Proceso de contratación</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="template-item p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50" data-template="auditoria">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-search text-red-600 text-sm"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-sm">Auditoría Interna</h4>
+                                <p class="text-xs text-gray-500">Proceso de auditoría</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="template-item p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50" data-template="aprobacion">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-check-circle text-yellow-600 text-sm"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-sm">Flujo de Aprobación</h4>
+                                <p class="text-xs text-gray-500">Proceso de aprobaciones</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <h3 class="font-semibold text-gray-900 mb-3">Más Templates ICASA</h3>
+                    <div class="space-y-2">
+                        <div class="template-item p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50" data-template="inventarios">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-boxes text-orange-600 text-sm"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-sm">Gestión de Inventarios</h4>
+                                    <p class="text-xs text-gray-500">Control de stock y almacén</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="template-item p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50" data-template="atencion-cliente">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-headset text-teal-600 text-sm"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-sm">Atención al Cliente</h4>
+                                    <p class="text-xs text-gray-500">Servicio y soporte</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="template-item p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50" data-template="mantenimiento">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-tools text-indigo-600 text-sm"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-sm">Mantenimiento Preventivo</h4>
+                                    <p class="text-xs text-gray-500">Cuidado de equipos</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="template-item p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50" data-template="seguridad">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-shield-alt text-pink-600 text-sm"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-sm">Seguridad e Higiene</h4>
+                                    <p class="text-xs text-gray-500">Protocolo de seguridad</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="template-item p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50" data-template="transporte-logistica">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-cyan-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-truck text-cyan-600 text-sm"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-sm">Transporte y Logistica</h4>
+                                    <p class="text-xs text-gray-500">Proceso completo de flete</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <h3 class="font-semibold text-gray-900 mb-3">Crear Nuevo</h3>
+                    <div class="space-y-2">
+                        <button id="blankTemplate" class="quick-template w-full text-left p-3 text-sm bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 rounded-lg font-medium">
+                            🆕 Empezar en Blanco
+                        </button>
+                        <button class="quick-template w-full text-left p-2 text-sm text-gray-600 hover:bg-gray-50 rounded" data-template="simple">
+                            📝 Proceso Simple (3 pasos)
+                        </button>
+                        <button class="quick-template w-full text-left p-2 text-sm text-gray-600 hover:bg-gray-50 rounded" data-template="decision">
+                            🔀 Con Decisiones
+                        </button>
+                        <button class="quick-template w-full text-left p-2 text-sm text-gray-600 hover:bg-gray-50 rounded" data-template="parallel">
+                            ⚡ Procesos Paralelos
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Elements Tab -->
+            <div id="elements-tab" class="tab-content p-4 hidden">
+                <h3 class="font-semibold text-gray-900 mb-3">Elementos de Diagrama</h3>
+                <div class="space-y-3">
+                    <div class="element-category">
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">Básicos</h4>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="element-item p-2 border border-gray-200 rounded text-center cursor-pointer hover:bg-gray-50" data-element="start">
+                                <div class="w-8 h-8 bg-green-100 rounded-full mx-auto mb-1 flex items-center justify-center">
+                                    <i class="fas fa-play text-green-600 text-xs"></i>
+                                </div>
+                                <span class="text-xs">Inicio</span>
+                            </div>
+                            <div class="element-item p-2 border border-gray-200 rounded text-center cursor-pointer hover:bg-gray-50" data-element="process">
+                                <div class="w-8 h-6 bg-blue-100 rounded mx-auto mb-1 flex items-center justify-center">
+                                    <i class="fas fa-square text-blue-600 text-xs"></i>
+                                </div>
+                                <span class="text-xs">Proceso</span>
+                            </div>
+                            <div class="element-item p-2 border border-gray-200 rounded text-center cursor-pointer hover:bg-gray-50" data-element="decision">
+                                <div class="w-8 h-8 bg-yellow-100 transform rotate-45 mx-auto mb-1 flex items-center justify-center">
+                                    <i class="fas fa-question text-yellow-600 text-xs transform -rotate-45"></i>
+                                </div>
+                                <span class="text-xs">Decisión</span>
+                            </div>
+                            <div class="element-item p-2 border border-gray-200 rounded text-center cursor-pointer hover:bg-gray-50" data-element="end">
+                                <div class="w-8 h-8 bg-red-100 rounded-full mx-auto mb-1 flex items-center justify-center">
+                                    <i class="fas fa-stop text-red-600 text-xs"></i>
+                                </div>
+                                <span class="text-xs">Fin</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Properties Tab -->
+            <div id="properties-tab" class="tab-content p-4 hidden">
+                <h3 class="font-semibold text-gray-900 mb-3">Información del Proceso</h3>
+                <p class="text-sm text-gray-600 mb-4">Opcional: Agrega información para organizar mejor tu proceso</p>
+                <form id="processForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+                        <input type="text" id="processTitle" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="Ej: Proceso de Ventas" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
+                        <select id="processCategory" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" required>
+                            <option value="">Seleccionar categoría</option>
+                            <option value="operational">Procesos Operativos</option>
+                            <option value="strategic">Procesos Estratégicos</option>
+                            <option value="support">Procesos de Soporte</option>
+                            <option value="audit">Procesos de Auditoría</option>
+                            <option value="quality">Procesos de Calidad</option>
+                            <option value="safety">Procesos de Seguridad</option>
+                            <option value="finance">Procesos Financieros</option>
+                            <option value="hr">Procesos de RRHH</option>
+                            <option value="it">Procesos de TI</option>
+                            <option value="legal">Procesos Legales</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Departamento *</label>
+                        <select id="processDepartment" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" required>
+                            <option value="">Seleccionar departamento</option>
+                            <option value="Dirección General">Dirección General</option>
+                            <option value="Administrativo">Administrativo</option>
+                            <option value="Comercial">Comercial</option>
+                            <option value="Operaciones">Operaciones</option>
+                            <option value="RRHH">Recursos Humanos</option>
+                            <option value="Finanzas">Finanzas</option>
+                            <option value="Mantenimiento">Mantenimiento</option>
+                            <option value="Sistemas">Sistemas</option>
+                            <option value="Calidad">Calidad</option>
+                            <option value="Seguridad">Seguridad</option>
+                            <option value="Logística">Logística</option>
+                            <option value="Compras">Compras</option>
+                            <option value="Legal">Legal</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
+                        <textarea id="processDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="Breve descripción del proceso..." required></textarea>
+                    </div>
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <p class="text-sm text-green-700">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            Todos los campos son obligatorios para organizar correctamente los procesos por departamento.
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Panel Central: Editor -->
+        <div class="flex-1 flex flex-col">
+            <!-- Toolbar del Editor -->
+            <div class="bg-white border-b border-gray-200 px-4 py-2">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <button id="modeToggle" class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors">
+                            <i class="fas fa-code mr-1"></i>Modo Código
+                        </button>
+                        <div class="h-4 w-px bg-gray-300"></div>
+                        <button id="undoBtn" class="p-2 text-gray-500 hover:text-gray-700" title="Deshacer">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                        <button id="redoBtn" class="p-2 text-gray-500 hover:text-gray-700" title="Rehacer">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                        <div class="h-4 w-px bg-gray-300"></div>
+                        <button id="zoomIn" class="p-2 text-gray-500 hover:text-gray-700" title="Acercar">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button id="zoomOut" class="p-2 text-gray-500 hover:text-gray-700" title="Alejar">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <button id="fitToScreen" class="p-2 text-gray-500 hover:text-gray-700" title="Ajustar a pantalla">
+                            <i class="fas fa-expand-arrows-alt"></i>
+                        </button>
+                        <div class="h-4 w-px bg-gray-300"></div>
+                        <button id="testMermaid" class="p-2 text-gray-500 hover:text-gray-700" title="Probar Mermaid">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button id="cleanCode" class="p-2 text-gray-500 hover:text-gray-700" title="Limpiar Código">
+                            <i class="fas fa-broom"></i>
+                        </button>
+                        <button id="pasteClean" class="p-2 text-gray-500 hover:text-gray-700" title="Pegar Limpio">
+                            <i class="fas fa-paste"></i>
+                        </button>
+                        <button id="saveTemplate" class="p-2 text-gray-500 hover:text-gray-700" title="Guardar como Template">
+                            <i class="fas fa-save"></i>
+                        </button>
+                        <button id="forceClean" class="p-2 text-red-500 hover:text-red-700" title="Limpieza Forzada">
+                            <i class="fas fa-magic"></i>
+                        </button>
+                        <button id="testPDF" class="p-2 text-purple-500 hover:text-purple-700" title="Probar PDF">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="flex items-center space-x-2 text-sm text-gray-500">
+                        <span id="autoSaveStatus">Guardado: <span class="text-blue-600">Solo manual</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Editor Area -->
+            <div class="flex-1 relative">
+                <!-- Vista Código Mermaid -->
+                <div id="codeEditor" class="absolute inset-0 flex">
+                    <div class="w-1/2 border-r border-gray-200">
+                        <div class="h-full">
+                            <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                                <h3 class="text-sm font-medium text-gray-700">Código Mermaid</h3>
+                            </div>
+                            <textarea id="mermaidCode" class="w-full h-full p-4 font-mono text-sm border-0 resize-none focus:outline-none" placeholder="Escribe tu código Mermaid aquí o selecciona una plantilla..."></textarea>
+                        </div>
+                    </div>
+                    <div class="w-1/2">
+                        <div class="h-full">
+                            <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                                <h3 class="text-sm font-medium text-gray-700">Vista Previa</h3>
+                            </div>
+                            <div id="mermaidPreview" class="h-full p-4 overflow-auto bg-white">
+                                <!-- Aquí se renderiza el diagrama -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vista Solo Preview (para modo pantalla completa) -->
+                <div id="fullPreview" class="absolute inset-0 hidden bg-white">
+                    <div class="h-full">
+                        <div class="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
+                            <h3 class="text-sm font-medium text-gray-700">Vista Previa - Pantalla Completa</h3>
+                            <div class="flex items-center space-x-2">
+                                <button id="zoomInPreview" class="p-2 text-gray-500 hover:text-gray-700 bg-white rounded border" title="Acercar">
+                                    <i class="fas fa-search-plus"></i>
+                                </button>
+                                <button id="zoomOutPreview" class="p-2 text-gray-500 hover:text-gray-700 bg-white rounded border" title="Alejar">
+                                    <i class="fas fa-search-minus"></i>
+                                </button>
+                                <button id="resetZoomPreview" class="p-2 text-gray-500 hover:text-gray-700 bg-white rounded border" title="Restablecer zoom">
+                                    <i class="fas fa-expand-arrows-alt"></i>
+                                </button>
+                                <button id="togglePanPreview" class="p-2 text-gray-500 hover:text-gray-700 bg-white rounded border" title="Activar navegación">
+                                    <i class="fas fa-hand-paper"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="mermaidPreviewFull" class="h-full overflow-hidden bg-white relative cursor-grab" style="user-select: none;">
+                            <!-- Aquí se renderiza el diagrama en pantalla completa -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vista Visual (oculta por defecto) -->
+                <div id="visualEditor" class="absolute inset-0 hidden">
+                    <div class="h-full bg-gray-100 relative">
+                        <div class="absolute inset-4 bg-white rounded-lg shadow-sm border border-gray-200">
+                            <div id="visualCanvas" class="w-full h-full rounded-lg overflow-hidden">
+                                <!-- Canvas para editor visual -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Exportación -->
+<div id="exportModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg max-w-md w-full p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Exportar Diagrama</h3>
+                <button id="closeExportModal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Formato</label>
+                    <select id="exportFormat" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="png">PNG (Imagen)</option>
+                        <option value="svg">SVG (Vector)</option>
+                        <option value="pdf">PDF (Documento)</option>
+                        <option value="mermaid">Código Mermaid</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button id="cancelExport" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancelar</button>
+                    <button id="confirmExport" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Exportar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Templates predefinidos para ICASA
+const ICASA_TEMPLATES = {
+    'proceso-compras': `graph TD
+    classDef inicio fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:black;
+    classDef proceso fill:#3498db,stroke:#2980b9,stroke-width:2px,color:black;
+    classDef documento fill:#f1c40f,stroke:#f39c12,stroke-width:2px,color:black;
+    classDef decision fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:black;
+    classDef fin fill:#95a5a6,stroke:#7f8c8d,stroke-width:2px,color:black;
+    
+    A([Solicitud de Compra]):::inicio --> B{Presupuesto Aprobado?}:::decision
+    B -->|Si| C[Cotizacion Proveedores]:::proceso
+    B -->|No| D[Solicitar Aprobacion Presupuestal]:::proceso
+    D --> E{Aprobado?}:::decision
+    E -->|Si| C
+    E -->|No| F([Rechazado]):::fin
+    C --> G[Evaluacion de Propuestas]:::proceso
+    G --> H[Seleccion de Proveedor]:::proceso
+    H --> I[Orden de Compra]:::documento
+    I --> J[Recepcion de Mercancia]:::proceso
+    J --> K[Verificacion de Calidad]:::proceso
+    K --> L{Conforme?}:::decision
+    L -->|Si| M[Autorizacion de Pago]:::proceso
+    L -->|No| N[Devolucion/Reclamo]:::proceso
+    M --> O([Fin del Proceso]):::fin
+    N --> O`,
+    
+    'reclutamiento': `flowchart TD
+    A[Requisicion de Personal] --> B[Analisis del Puesto]
+    B --> C[Publicacion de Vacante]
+    C --> D[Recepcion de CVs]
+    D --> E[Filtro Inicial]
+    E --> F{Candidatos Aptos?}
+    F -->|No| G[Ampliar Busqueda]
+    G --> C
+    F -->|Si| H[Entrevista Inicial RRHH]
+    H --> I{Pasa Filtro?}
+    I -->|No| J[Descartado]
+    I -->|Si| K[Entrevista Tecnica]
+    K --> L{Aprobado?}
+    L -->|No| J
+    L -->|Si| M[Verificacion de Referencias]
+    M --> N[Oferta Laboral]
+    N --> O{Acepta?}
+    O -->|No| P[Fin - No Contratado]
+    O -->|Si| Q[Contratacion]
+    Q --> R[Induccion]
+    R --> S[Fin del Proceso]`,
+    
+    'auditoria': `flowchart TD
+    A[Planificacion de Auditoria] --> B[Definir Alcance y Objetivos]
+    B --> C[Asignacion de Equipo Auditor]
+    C --> D[Revision Documental]
+    D --> E[Programa de Auditoria]
+    E --> F[Reunion de Apertura]
+    F --> G[Ejecucion de Auditoria]
+    G --> H[Recopilacion de Evidencias]
+    H --> I[Analisis de Hallazgos]
+    I --> J{Hay No Conformidades?}
+    J -->|Si| K[Documentar No Conformidades]
+    J -->|No| L[Documentar Observaciones]
+    K --> M[Reunion de Cierre]
+    L --> M
+    M --> N[Elaboracion de Informe]
+    N --> O[Entrega de Informe]
+    O --> P[Plan de Acciones Correctivas]
+    P --> Q[Seguimiento]
+    Q --> R[Cierre de Auditoria]`,
+    
+    'simple': `flowchart TD
+    A[Inicio] --> B[Proceso]
+    B --> C[Fin]`,
+    
+    'decision': `flowchart TD
+    A[Inicio] --> B{Decision?}
+    B -->|Si| C[Opcion A]
+    B -->|No| D[Opcion B]
+    C --> E[Fin]
+    D --> E`,
+    
+    'parallel': `flowchart TD
+    A[Inicio] --> B[División]
+    B --> C[Proceso A]
+    B --> D[Proceso B]
+    C --> E[Convergencia]
+    D --> E
+    E --> F[Fin]`,
+    
+    'inventarios': `flowchart TD
+    A[Solicitud de Material] --> B[Verificar Stock]
+    B --> C{Hay Disponible?}
+    C -->|Si| D[Preparar Entrega]
+    C -->|No| E[Generar Orden de Compra]
+    E --> F[Recepcion de Material]
+    F --> G[Actualizacion de Inventario]
+    G --> D
+    D --> H[Entrega de Material]
+    H --> I[Registro de Salida]
+    I --> J[Actualizacion de Stock]
+    J --> K{Stock Minimo?}
+    K -->|Si| L[Alerta de Reposicion]
+    K -->|No| M[Fin del Proceso]
+    L --> M`,
+    
+    'atencion-cliente': `flowchart TD
+    A[Contacto del Cliente] --> B[Registro de Solicitud]
+    B --> C{Tipo de Consulta?}
+    C -->|Informacion| D[Proporcionar Informacion]
+    C -->|Queja| E[Registro de Queja]
+    C -->|Servicio| F[Derivar a Area Tecnica]
+    D --> G[Seguimiento]
+    E --> H[Investigacion]
+    F --> I[Programar Servicio]
+    H --> J[Resolucion]
+    I --> K[Ejecutar Servicio]
+    J --> G
+    K --> G
+    G --> L[Encuesta de Satisfaccion]
+    L --> M[Cierre de Caso]
+    M --> N[Fin del Proceso]`,
+    
+    'mantenimiento': `flowchart TD
+    A[Programacion de Mantenimiento] --> B[Revision de Equipos]
+    B --> C[Preparacion de Herramientas]
+    C --> D[Inspeccion Visual]
+    D --> E[Limpieza General]
+    E --> F[Lubricacion]
+    F --> G[Ajustes Necesarios]
+    G --> H[Pruebas de Funcionamiento]
+    H --> I{Funciona Correctamente?}
+    I -->|No| J[Reparacion Correctiva]
+    I -->|Si| K[Registro de Actividades]
+    J --> L[Prueba Post-Reparacion]
+    L --> I
+    K --> M[Programar Proximo Mantenimiento]
+    M --> N[Fin del Proceso]`,
+    
+    'seguridad': `flowchart TD
+    A[Identificacion de Riesgo] --> B[Evaluacion de Riesgo]
+    B --> C{Nivel de Riesgo?}
+    C -->|Alto| D[Accion Inmediata]
+    C -->|Medio| E[Plan de Control]
+    C -->|Bajo| F[Monitoreo Regular]
+    D --> G[Implementar Medidas]
+    E --> H[Capacitacion Personal]
+    F --> I[Registro de Seguimiento]
+    G --> J[Verificacion de Eficacia]
+    H --> K[Provision de EPP]
+    K --> L[Entrenamiento en Uso]
+    L --> J
+    J --> M{Riesgo Controlado?}
+    M -->|No| N[Revisar Medidas]
+    M -->|Si| O[Documentar Proceso]
+    N --> G
+    O --> P[Auditoria Periodica]
+    P --> Q[Fin del Proceso]
+    I --> Q`,
+    
+    'transporte-logistica': `graph TD
+    classDef inicio fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:black;
+    classDef proceso fill:#3498db,stroke:#2980b9,stroke-width:2px,color:black;
+    classDef documento fill:#f1c40f,stroke:#f39c12,stroke-width:2px,color:black;
+    classDef decision fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:black;
+    classDef fin fill:#95a5a6,stroke:#7f8c8d,stroke-width:2px,color:black;
+
+    subgraph FASE_1 ["Fase 1: Solicitud y Contratacion"]
+        A([Inicio: Cliente solicita servicio]):::inicio --> B[Cotizacion del flete]:::proceso
+        B --> C{Cliente Acepta?}:::decision
+        C -->|No| Z([Fin del Proceso]):::fin
+        C -->|Si| D[Confirmacion y Booking]:::proceso
+    end
+
+    subgraph FASE_2 ["Fase 2: Documentacion y Carta Porte"]
+        E[Recopilacion de Datos Fiscales]:::proceso
+        F[Emision de Contrato de Servicio]:::documento
+        G[Generacion de CARTA PORTE]:::documento
+        G1[Validacion SAT]:::proceso
+        H[Asignacion de Seguro de Carga]:::documento
+        
+        E --> F
+        F --> G
+        G --> G1
+        G1 --> H
+    end
+
+    subgraph FASE_3 ["Fase 3: Recoleccion y Transporte"]
+        I[Asignacion de Unidad y Operador]:::proceso
+        J[Unidad se dirige a Origen]:::proceso
+        K[Llegada a Recoleccion]:::proceso
+        L[Carga y Estiba de Mercancia]:::proceso
+        M[Validacion Fisica vs Documental]:::proceso
+        N[Inicio de Ruta]:::proceso
+        O[Transito y Monitoreo GPS]:::proceso
+        O1[Protocolo de Seguridad]:::decision
+        P[Arribo a Destino]:::proceso
+        
+        I --> J
+        J --> K
+        K --> L
+        L --> M
+        M --> N
+        N --> O
+        O -->|Incidencia| O1
+        O -->|Normal| P
+        O1 --> P
+    end
+
+    subgraph FASE_4 ["Fase 4: Entrega y Cobranza"]
+        Q[Maniobras de Descarga]:::proceso
+        R[Inspeccion de Recibo]:::proceso
+        S[Firma de POD]:::documento
+        T[Liberacion de Unidad]:::proceso
+        U[Retorno de Evidencias]:::proceso
+        V[Facturacion Final]:::documento
+        W([Fin: Cobranza y Cierre]):::fin
+        
+        Q --> R
+        R --> S
+        S --> T
+        T --> U
+        U --> V
+        V --> W
+    end
+
+    D --> E
+    H --> I
+    P --> Q`
+};
+
+// Configuración de Mermaid
+let mermaidConfig = {
+    startOnLoad: false,
+    theme: 'default',
+    securityLevel: 'loose',
+    flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true
+    }
+};
+
+mermaid.initialize(mermaidConfig);
+
+// Variables globales
+let editor;
+let currentMode = 'code'; // 'code' o 'visual'
+let autoSaveInterval;
+let isModified = false;
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+    initializeEditor();
+    initializeEventListeners();
+    
+    // Verificar parámetros en URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const templateParam = urlParams.get('template');
+    const titleParam = urlParams.get('title');
+    
+    if (templateParam) {
+        // Cargar plantilla desde parámetro URL
+        loadTemplateFromParam(templateParam);
+    } else if (titleParam) {
+        // Cargar datos del formulario de creación
+        loadProcessFromParams();
+    } else {
+        loadProcessData(); // Cargar datos si estamos editando
+    }
+    
+    // Renderizar diagrama inicial después de que todo esté cargado
+    setTimeout(() => {
+        renderMermaidDiagram();
+    }, 500);
+    
+    startAutoSave();
+});
+
+// Función para cargar datos del proceso si estamos editando
+function loadProcessData() {
+    const pathParts = window.location.pathname.split('/');
+    const processId = pathParts[pathParts.length - 2]; // Obtener ID de la URL
+    
+    if (processId && !isNaN(processId)) {
+        fetch(`/organizational/api/flujogramas/${processId}/data/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.title) {
+                document.getElementById('processTitle').value = data.title;
+                document.getElementById('processDescription').value = data.description || '';
+                
+                // Mapear categoría del backend al frontend
+                const categoryMapping = {
+                    'Procesos Operativos': 'operational',
+                    'Procesos Estratégicos': 'strategic',
+                    'Procesos de Soporte': 'support',
+                    'Procesos de Auditoría': 'audit',
+                    'Procesos de Calidad': 'quality',
+                    'Procesos de Seguridad': 'safety',
+                    'Procesos Financieros': 'finance',
+                    'Procesos de RRHH': 'hr',
+                    'Procesos de TI': 'it',
+                    'Procesos Legales': 'legal'
+                };
+                
+                const categoryValue = categoryMapping[data.category] || data.category || '';
+                document.getElementById('processCategory').value = categoryValue;
+                document.getElementById('processDepartment').value = data.department || '';
+                
+                // Actualizar título del editor
+                updateEditorTitle(data.title, data.department);
+                
+                if (data.diagram_data && data.diagram_data.mermaid_code) {
+                    editor.setValue(data.diagram_data.mermaid_code);
+                    renderMermaidDiagram();
+                }
+                
+                // Cambiar a tab de propiedades para mostrar los datos cargados
+                switchTab('properties');
+                
+                showNotification(`Proceso "${data.title}" cargado exitosamente`, 'success');
+            }
+        })
+        .catch(error => {
+            console.error('Error cargando proceso:', error);
+        });
+    }
+}
+
+// Función para validar código Mermaid
+function validateMermaidCode(code) {
+    const lines = code.split('\n').filter(line => line.trim());
+    
+    if (lines.length === 0) {
+        return { valid: false, error: 'El código está vacío' };
+    }
+    
+    const firstLine = lines[0].trim();
+    const validStarters = ['flowchart', 'graph', 'sequenceDiagram', 'classDiagram', 'stateDiagram', 'journey', 'gantt'];
+    
+    if (!validStarters.some(starter => firstLine.startsWith(starter))) {
+        return { valid: false, error: 'El código debe comenzar con un tipo de diagrama válido (flowchart, graph, etc.)' };
+    }
+    
+    // Validaciones adicionales
+    const errors = [];
+    
+    // Verificar entidades HTML mal formadas
+    if (code.includes('&gt;') || code.includes('&lt;')) {
+        errors.push('Usa --> en lugar de &gt; para las flechas');
+    }
+    
+    // Verificar sintaxis de subgrafos
+    const subgraphLines = lines.filter(line => line.trim().startsWith('subgraph'));
+    subgraphLines.forEach(line => {
+        if (line.includes('[') && !line.includes('"')) {
+            errors.push('Los títulos de subgrafos deben usar comillas dobles: subgraph ID ["Título"]');
+        }
+    });
+    
+    // Verificar flechas con etiquetas
+    const arrowLines = lines.filter(line => line.includes('--') && (line.includes('|') || line.includes('-- ')));
+    arrowLines.forEach(line => {
+        if (line.match(/-- \w+ -->/)) {
+            errors.push('Usa -->|etiqueta| en lugar de -- etiqueta --> para flechas con texto');
+        }
+    });
+    
+    if (errors.length > 0) {
+        return { valid: false, error: errors.join('. ') };
+    }
+    
+    return { valid: true };
+}
+
+// Mejorar la función de renderizado con validación
+function renderMermaidDiagram() {
+    let code = editor.getValue();
+    const preview = document.getElementById('mermaidPreview');
+    
+    if (!code.trim()) {
+        preview.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500"><div class="text-center"><i class="fas fa-code text-4xl mb-4"></i><p>Escribe código Mermaid para ver la vista previa</p><p class="text-sm mt-2">Ejemplo: flowchart TD<br>A[Inicio] --> B[Proceso]</p></div></div>';
+        return;
+    }
+    
+    // Decodificación exhaustiva de entidades HTML
+    code = code
+        .replace(/&gt;/g, '>')
+        .replace(/&lt;/g, '<')
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&apos;/g, "'")
+        .replace(/&hellip;/g, '...')
+        .replace(/&ndash;/g, '-')
+        .replace(/&mdash;/g, '--')
+        // Limpiar caracteres invisibles y problemas de codificación
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .replace(/\u00A0/g, ' ')
+        // Normalizar espacios y saltos de línea
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n');
+    
+    try {
+        // Limpiar preview anterior
+        preview.innerHTML = '';
+        
+        // Crear ID único para el diagrama
+        const diagramId = 'diagram-' + Date.now();
+        
+        // Crear contenedor
+        const container = document.createElement('div');
+        container.className = 'w-full h-full p-4 overflow-auto bg-white';
+        container.id = diagramId;
+        
+        preview.appendChild(container);
+        
+        // Renderizar usando mermaid.render
+        mermaid.render(diagramId + '-svg', code, function(svgCode) {
+            container.innerHTML = svgCode;
+            
+            // Ajustar SVG
+            const svg = container.querySelector('svg');
+            if (svg) {
+                svg.style.maxWidth = '100%';
+                svg.style.height = 'auto';
+                svg.style.display = 'block';
+                svg.style.margin = '0 auto';
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error renderizando Mermaid:', error);
+        preview.innerHTML = `<div class="flex items-center justify-center h-full text-red-500"><div class="text-center"><i class="fas fa-exclamation-triangle text-2xl mb-2"></i><p>Error en el código Mermaid</p><p class="text-sm">${error.message}</p><p class="text-xs mt-2">Revisa la sintaxis del diagrama</p></div></div>`;
+    }
+}
+
+function initializeEditor() {
+    // Inicializar CodeMirror para el editor de código
+    const textarea = document.getElementById('mermaidCode');
+    editor = CodeMirror.fromTextArea(textarea, {
+        mode: 'javascript',
+        lineNumbers: true,
+        theme: 'default',
+        lineWrapping: true,
+        autoCloseBrackets: true,
+        matchBrackets: true
+    });
+    
+    editor.on('change', function() {
+        isModified = true;
+        setTimeout(renderMermaidDiagram, 300); // Debounce para mejor rendimiento
+    });
+    
+    // Interceptar paste para limpiar automáticamente
+    editor.on('paste', function(cm, event) {
+        setTimeout(() => {
+            let currentValue = editor.getValue();
+            let cleanValue = currentValue
+                .replace(/&gt;/g, '>')
+                .replace(/&lt;/g, '<')
+                .replace(/&amp;/g, '&')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/&nbsp;/g, ' ')
+                .replace(/&apos;/g, "'")
+                .replace(/&hellip;/g, '...')
+                .replace(/&ndash;/g, '-')
+                .replace(/&mdash;/g, '--')
+                .replace(/[\u200B-\u200D\uFEFF]/g, '')
+                .replace(/\u00A0/g, ' ');
+            
+            if (currentValue !== cleanValue) {
+                const cursor = editor.getCursor();
+                editor.setValue(cleanValue);
+                editor.setCursor(cursor);
+                renderMermaidDiagram();
+            }
+        }, 100);
+    });
+}
+
+function initializeEventListeners() {
+    // Tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tabName = this.dataset.tab;
+            switchTab(tabName);
+        });
+    });
+    
+    // Templates
+    document.querySelectorAll('.template-item, .quick-template').forEach(item => {
+        item.addEventListener('click', function() {
+            const template = this.dataset.template;
+            if (template) {
+                loadTemplate(template);
+            }
+        });
+    });
+    
+    // Botón de código en blanco
+    document.getElementById('blankTemplate').addEventListener('click', function() {
+        editor.setValue('graph TD\n    A[Inicio] --> B[Proceso]\n    B --> C[Fin]');
+        renderMermaidDiagram();
+        showNotification('Editor listo para crear tu proceso', 'success');
+    });
+    
+    // Botones principales
+    document.getElementById('saveBtn').addEventListener('click', saveProcess);
+    document.getElementById('exportBtn').addEventListener('click', exportAsPNG);
+    document.getElementById('previewBtn').addEventListener('click', togglePreview);
+    document.getElementById('modeToggle').addEventListener('click', toggleMode);
+    
+    // Modal de exportación
+    document.getElementById('closeExportModal').addEventListener('click', hideExportModal);
+    document.getElementById('cancelExport').addEventListener('click', hideExportModal);
+    document.getElementById('confirmExport').addEventListener('click', exportDiagram);
+    
+    // Zoom y herramientas
+    document.getElementById('zoomIn').addEventListener('click', () => zoomDiagram(1.2));
+    document.getElementById('zoomOut').addEventListener('click', () => zoomDiagram(0.8));
+    document.getElementById('fitToScreen').addEventListener('click', fitToScreen);
+    document.getElementById('testMermaid').addEventListener('click', testMermaidRender);
+    document.getElementById('cleanCode').addEventListener('click', cleanMermaidCode);
+    document.getElementById('pasteClean').addEventListener('click', pasteCleanCode);
+    document.getElementById('saveTemplate').addEventListener('click', saveAsTemplate);
+    document.getElementById('forceClean').addEventListener('click', forceCleanCode);
+    document.getElementById('testPDF').addEventListener('click', testPDFLibrary);
+    
+    // Controles de vista previa
+    document.getElementById('zoomInPreview').addEventListener('click', () => zoomPreview(1.2));
+    document.getElementById('zoomOutPreview').addEventListener('click', () => zoomPreview(0.8));
+    document.getElementById('resetZoomPreview').addEventListener('click', resetPreviewZoom);
+    document.getElementById('togglePanPreview').addEventListener('click', togglePreviewPan);
+}
+
+function switchTab(tabName) {
+    // Actualizar botones
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active', 'border-green-500', 'text-green-600');
+        btn.classList.add('text-gray-500');
+    });
+    
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active', 'border-green-500', 'text-green-600');
+    document.querySelector(`[data-tab="${tabName}"]`).classList.remove('text-gray-500');
+    
+    // Mostrar contenido
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+}
+
+function loadTemplate(templateName) {
+    if (ICASA_TEMPLATES[templateName]) {
+        // Decodificar entidades HTML
+        let cleanCode = ICASA_TEMPLATES[templateName]
+            .replace(/&gt;/g, '>')
+            .replace(/&lt;/g, '<')
+            .replace(/&amp;/g, '&')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&nbsp;/g, ' ');
+        
+        // Limpiar código adicional para asegurar compatibilidad
+        cleanCode = cleanCode.trim();
+        
+        // Limpiar caracteres problemáticos adicionales
+        cleanCode = cleanCode
+            .replace(/[\u200B-\u200D\uFEFF]/g, '')
+            .replace(/\u00A0/g, ' ')
+            .replace(/\r\n/g, '\n')
+            .replace(/\r/g, '\n');
+            
+        editor.setValue(cleanCode);
+        
+        // Forzar actualización del editor
+        setTimeout(() => {
+            editor.refresh();
+            renderMermaidDiagram();
+        }, 100);
+        
+        // Mostrar notificación
+        showNotification(`Template "${templateName}" cargado exitosamente`, 'success');
+    }
+}
+
+function loadTemplateFromParam(templateName) {
+    // Cargar plantilla y configurar propiedades básicas
+    loadTemplate(templateName);
+    
+    // Configurar propiedades del proceso basadas en la plantilla
+    const templateConfig = {
+        'proceso-compras': {
+            title: 'Proceso de Compras',
+            category: 'operational',
+            department: 'Administrativo',
+            description: 'Flujo estándar para adquisiciones y compras de la organización'
+        },
+        'reclutamiento': {
+            title: 'Reclutamiento y Selección',
+            category: 'support',
+            department: 'RRHH',
+            description: 'Proceso completo de contratación de personal'
+        },
+        'auditoria': {
+            title: 'Auditoría Interna',
+            category: 'audit',
+            department: 'Administrativo',
+            description: 'Proceso de auditoría y control interno'
+        }
+    };
+    
+    const config = templateConfig[templateName];
+    if (config) {
+        document.getElementById('processTitle').value = config.title;
+        document.getElementById('processCategory').value = config.category;
+        document.getElementById('processDepartment').value = config.department;
+        document.getElementById('processDescription').value = config.description;
+    }
+    
+    // Limpiar URL
+    const url = new URL(window.location);
+    url.searchParams.delete('template');
+    window.history.replaceState({}, document.title, url.pathname);
+}
+
+function loadProcessFromParams() {
+    // Cargar datos del formulario de creación
+    const urlParams = new URLSearchParams(window.location.search);
+    const title = urlParams.get('title');
+    const department = urlParams.get('department');
+    const category = urlParams.get('category');
+    const description = urlParams.get('description');
+    
+    if (title) {
+        document.getElementById('processTitle').value = title;
+        document.getElementById('processDepartment').value = department || '';
+        document.getElementById('processCategory').value = category || '';
+        document.getElementById('processDescription').value = description || '';
+        
+        // Actualizar título del editor
+        updateEditorTitle(title, department);
+        
+        // Mostrar tab de info con los datos cargados
+        switchTab('properties');
+        
+        // Inicializar con código básico
+        editor.setValue('graph TD\n    A[Inicio] --> B[Proceso]\n    B --> C[Fin]');
+        renderMermaidDiagram();
+        
+        showNotification(`Proceso "${title}" listo para codificar`, 'success');
+        
+        // Limpiar URL
+        const url = new URL(window.location);
+        url.search = '';
+        window.history.replaceState({}, document.title, url.pathname);
+    }
+}
+
+function renderMermaidDiagram() {
+    const code = editor.getValue();
+    const preview = document.getElementById('mermaidPreview');
+    
+    if (!code.trim()) {
+        preview.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500">Escribe código Mermaid para ver la vista previa</div>';
+        return;
+    }
+    
+    try {
+        // Limpiar preview anterior
+        preview.innerHTML = '';
+        
+        // Crear elemento para el diagrama
+        const element = document.createElement('div');
+        element.className = 'mermaid-diagram';
+        preview.appendChild(element);
+        
+        // Renderizar diagrama
+        mermaid.render('mermaid-diagram-' + Date.now(), code, (svgCode) => {
+            element.innerHTML = svgCode;
+        });
+        
+    } catch (error) {
+        preview.innerHTML = `<div class="flex items-center justify-center h-full text-red-500">
+            <div class="text-center">
+                <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                <p>Error en el código Mermaid</p>
+                <p class="text-sm">${error.message}</p>
+            </div>
+        </div>`;
+    }
+}
+
+function toggleMode() {
+    const codeEditor = document.getElementById('codeEditor');
+    const visualEditor = document.getElementById('visualEditor');
+    const modeToggle = document.getElementById('modeToggle');
+    
+    if (currentMode === 'code') {
+        codeEditor.classList.add('hidden');
+        visualEditor.classList.remove('hidden');
+        modeToggle.innerHTML = '<i class="fas fa-eye mr-1"></i>Modo Visual';
+        currentMode = 'visual';
+    } else {
+        codeEditor.classList.remove('hidden');
+        visualEditor.classList.add('hidden');
+        modeToggle.innerHTML = '<i class="fas fa-code mr-1"></i>Modo Código';
+        currentMode = 'code';
+    }
+}
+
+function saveProcess() {
+    const code = editor.getValue();
+    const title = document.getElementById('processTitle').value.trim();
+    const description = document.getElementById('processDescription').value.trim();
+    const category = document.getElementById('processCategory').value;
+    const department = document.getElementById('processDepartment').value;
+    
+    if (!code.trim()) {
+        showNotification('No hay código para guardar', 'error');
+        return;
+    }
+    
+    if (!title) {
+        showNotification('El título del proceso es obligatorio', 'error');
+        switchTab('properties');
+        document.getElementById('processTitle').focus();
+        return;
+    }
+    
+    if (!category) {
+        showNotification('La categoría del proceso es obligatoria', 'error');
+        switchTab('properties');
+        document.getElementById('processCategory').focus();
+        return;
+    }
+    
+    if (!department) {
+        showNotification('El departamento del proceso es obligatorio', 'error');
+        switchTab('properties');
+        document.getElementById('processDepartment').focus();
+        return;
+    }
+    
+    if (!description) {
+        showNotification('La descripción del proceso es obligatoria', 'error');
+        switchTab('properties');
+        document.getElementById('processDescription').focus();
+        return;
+    }
+    
+    // Mostrar indicador de guardado
+    document.getElementById('autoSaveStatus').innerHTML = 'Guardado: <span class="text-blue-600">Guardando...</span>';
+    
+    // Obtener ID del proceso si estamos editando
+    const pathParts = window.location.pathname.split('/');
+    const processId = pathParts[pathParts.length - 2]; // Obtener ID de la URL
+    
+    const processData = {
+        title: title,
+        description: description,
+        category: category,
+        department: department,
+        diagram_data: {
+            mermaid_code: code,
+            mode: currentMode,
+            canvas_settings: {},
+            last_saved: new Date().toISOString()
+        }
+    };
+    
+    // Si tenemos ID, agregarlo para actualizar
+    if (processId && !isNaN(processId)) {
+        processData.process_id = processId;
+    }
+    
+    // Obtener CSRF token
+    const csrfToken = getCSRFToken();
+    
+    // Llamada AJAX real
+    fetch('/organizational/api/flujogramas/save/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify(processData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            isModified = false;
+            document.getElementById('autoSaveStatus').innerHTML = 'Guardado: <span class="text-green-600">Guardado ' + new Date().toLocaleTimeString() + '</span>';
+            
+            // Actualizar URL solo si es un proceso nuevo
+            if (data.process_id && !processId) {
+                const newUrl = `/organizational/flujogramas/editor/${data.process_id}/`;
+                window.history.pushState({}, '', newUrl);
+            }
+        } else {
+            showNotification(data.message || 'Error al guardar', 'error');
+            document.getElementById('autoSaveStatus').innerHTML = 'Guardado: <span class="text-red-600">Error al guardar</span>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error de conexión al guardar', 'error');
+        document.getElementById('autoSaveStatus').innerHTML = 'Guardado: <span class="text-red-600">Sin conexión</span>';
+    });
+}
+
+function showExportModal() {
+    document.getElementById('exportModal').classList.remove('hidden');
+}
+
+function hideExportModal() {
+    document.getElementById('exportModal').classList.add('hidden');
+}
+
+function exportDiagram() {
+    const format = document.getElementById('exportFormat').value;
+    
+    switch (format) {
+        case 'png':
+            exportAsPNG();
+            break;
+        case 'svg':
+            exportAsSVG();
+            break;
+        case 'pdf':
+            exportAsPDF();
+            break;
+        case 'mermaid':
+            exportAsMermaid();
+            break;
+    }
+    
+    hideExportModal();
+}
+
+function exportAsPNG() {
+    console.log('Función exportAsPNG ejecutada');
+    
+    const svgElement = document.querySelector('#mermaidPreview svg');
+    if (!svgElement) {
+        showNotification('No hay diagrama para exportar', 'error');
+        return;
+    }
+    
+    // Método simple y directo
+    try {
+        const svgData = new XMLSerializer().serializeToString(svgElement);
+        const processTitle = document.getElementById('processTitle').value || 'flujograma';
+        const filename = processTitle.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_') + '_flujograma.svg';
+        
+        const blob = new Blob([svgData], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        URL.revokeObjectURL(url);
+        showNotification('Flujograma descargado como SVG: ' + filename, 'success');
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error al descargar: ' + error.message, 'error');
+    }
+}
+
+function exportAsSVG() {
+    const svgElement = document.querySelector('#mermaidPreview svg');
+    if (svgElement) {
+        const processTitle = document.getElementById('processTitle').value || 'diagrama';
+        const filename = `${processTitle.replace(/[^a-zA-Z0-9]/g, '_')}.svg`;
+        const svgData = new XMLSerializer().serializeToString(svgElement);
+        const blob = new Blob([svgData], { type: 'image/svg+xml' });
+        downloadFile(blob, filename);
+    } else {
+        showNotification('No hay diagrama para exportar', 'error');
+    }
+}
+
+function exportAsPDF() {
+    exportAsPNG();
+}
+
+function exportAsMermaid() {
+    const code = editor.getValue();
+    const processTitle = document.getElementById('processTitle').value || 'diagrama';
+    const filename = `${processTitle.replace(/[^a-zA-Z0-9]/g, '_')}.mmd`;
+    const blob = new Blob([code], { type: 'text/plain' });
+    downloadFile(blob, filename);
+}
+
+function downloadFile(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function startAutoSave() {
+    // Deshabilitar guardado automático - solo guardado manual
+    document.getElementById('autoSaveStatus').innerHTML = 'Guardado: <span class="text-blue-600">Solo manual</span>';
+    
+    // Mostrar indicador de cambios no guardados
+    editor.on('change', function() {
+        isModified = true;
+        document.getElementById('autoSaveStatus').innerHTML = 'Guardado: <span class="text-orange-600">Cambios sin guardar</span>';
+    });
+}
+
+function getCSRFToken() {
+    // Obtener token CSRF de las cookies o del DOM
+    const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+    
+    if (cookieValue) {
+        return cookieValue;
+    }
+    
+    // Fallback: buscar en meta tag
+    const metaTag = document.querySelector('meta[name="csrf-token"]');
+    if (metaTag) {
+        return metaTag.getAttribute('content');
+    }
+    
+    // Fallback: buscar en input hidden
+    const hiddenInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (hiddenInput) {
+        return hiddenInput.value;
+    }
+    
+    console.warn('CSRF token no encontrado');
+    return '';
+}
+
+function showNotification(message, type = 'info') {
+    // Crear notificación toast
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white z-50 ${
+        type === 'success' ? 'bg-green-500' : 
+        type === 'error' ? 'bg-red-500' : 
+        'bg-blue-500'
+    }`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+function zoomDiagram(factor) {
+    const preview = document.getElementById('mermaidPreview');
+    const svg = preview.querySelector('svg');
+    if (svg) {
+        const currentScale = svg.style.transform.match(/scale\(([\d.]+)\)/);
+        const scale = Math.max(0.1, Math.min(5, currentScale ? parseFloat(currentScale[1]) * factor : factor));
+        svg.style.transform = `scale(${scale})`;
+        svg.style.transformOrigin = 'center center';
+        svg.style.transition = 'transform 0.2s ease';
+    }
+}
+
+function fitToScreen() {
+    const preview = document.getElementById('mermaidPreview');
+    const svg = preview.querySelector('svg');
+    if (svg) {
+        svg.style.transform = 'scale(1)';
+        svg.style.width = '100%';
+        svg.style.height = 'auto';
+    }
+}
+
+// Variables para navegación
+let previewZoom = 1;
+let previewPanEnabled = false;
+let previewPanStart = { x: 0, y: 0 };
+let previewPanOffset = { x: 0, y: 0 };
+let isDragging = false;
+
+function cleanMermaidCode() {
+    let code = editor.getValue();
+    
+    // Limpieza exhaustiva
+    code = code
+        .replace(/&gt;/g, '>')
+        .replace(/&lt;/g, '<')
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&apos;/g, "'")
+        .replace(/&hellip;/g, '...')
+        .replace(/&ndash;/g, '-')
+        .replace(/&mdash;/g, '--')
+        // Limpiar espacios extra
+        .replace(/\s+/g, ' ')
+        .trim();
+    
+    // Detectar si es un diagrama de secuencia y preguntar si convertir
+    if (code.startsWith('sequenceDiagram')) {
+        const convert = confirm('¿Este es un diagrama de secuencia. ¿Quieres convertirlo a flowchart para usar con los estilos de colores?');
+        if (convert) {
+            showNotification('Para convertir a flowchart, usa el template "Transporte y Logística" como base', 'info');
+        }
+    }
+    
+    editor.setValue(code);
+    renderMermaidDiagram();
+    showNotification('Código limpiado exitosamente', 'success');
+}
+
+function pasteCleanCode() {
+    navigator.clipboard.readText().then(text => {
+        // Limpieza exhaustiva del texto pegado
+        let cleanText = text
+            .replace(/&gt;/g, '>')
+            .replace(/&lt;/g, '<')
+            .replace(/&amp;/g, '&')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&apos;/g, "'")
+            .replace(/&hellip;/g, '...')
+            .replace(/&ndash;/g, '-')
+            .replace(/&mdash;/g, '--')
+            // Limpiar caracteres invisibles
+            .replace(/[\u200B-\u200D\uFEFF]/g, '')
+            // Normalizar saltos de línea
+            .replace(/\r\n/g, '\n')
+            .replace(/\r/g, '\n')
+            // Limpiar espacios extra pero mantener estructura
+            .replace(/[ \t]+/g, ' ')
+            .replace(/\n\s+\n/g, '\n\n')
+            .trim();
+        
+        editor.setValue(cleanText);
+        renderMermaidDiagram();
+        showNotification('Código pegado y limpiado exitosamente', 'success');
+    }).catch(err => {
+        showNotification('Error al acceder al portapapeles', 'error');
+        console.error('Error:', err);
+    });
+}
+
+function saveAsTemplate() {
+    const code = editor.getValue();
+    const title = document.getElementById('processTitle').value;
+    
+    if (!code.trim()) {
+        showNotification('No hay código para guardar como template', 'error');
+        return;
+    }
+    
+    if (!title.trim()) {
+        showNotification('Ingresa un título para el proceso primero', 'error');
+        return;
+    }
+    
+    // Crear nombre de template basado en el título
+    const templateName = title.toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')
+        .replace(/\s+/g, '-')
+        .substring(0, 30);
+    
+    // Agregar al objeto de templates localmente
+    ICASA_TEMPLATES[templateName] = code;
+    
+    // Crear botón dinámicamente
+    const templatesContainer = document.querySelector('#templates-tab .space-y-2');
+    const newTemplateButton = document.createElement('div');
+    newTemplateButton.className = 'template-item p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50';
+    newTemplateButton.setAttribute('data-template', templateName);
+    newTemplateButton.innerHTML = `
+        <div class="flex items-center">
+            <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                <i class="fas fa-user text-purple-600 text-sm"></i>
+            </div>
+            <div>
+                <h4 class="font-medium text-sm">${title}</h4>
+                <p class="text-xs text-gray-500">Template personalizado</p>
+            </div>
+        </div>
+    `;
+    
+    // Agregar event listener
+    newTemplateButton.addEventListener('click', function() {
+        loadTemplate(templateName);
+    });
+    
+    // Insertar al final de la sección "Más Templates ICASA"
+    const moreTemplatesSection = templatesContainer.querySelector('h3:last-of-type').parentNode;
+    moreTemplatesSection.appendChild(newTemplateButton);
+    
+    showNotification(`Template "${title}" guardado exitosamente`, 'success');
+}
+
+function forceCleanCode() {
+    let code = editor.getValue();
+    
+    // Limpieza ultra agresiva
+    code = code
+        // Entidades HTML
+        .replace(/&gt;/g, '>')
+        .replace(/&lt;/g, '<')
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&apos;/g, "'")
+        .replace(/&hellip;/g, '...')
+        .replace(/&ndash;/g, '-')
+        .replace(/&mdash;/g, '--')
+        // Caracteres invisibles y problemáticos
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .replace(/\u00A0/g, ' ')
+        .replace(/\u2013/g, '-')
+        .replace(/\u2014/g, '--')
+        .replace(/\u2018/g, "'")
+        .replace(/\u2019/g, "'")
+        .replace(/\u201C/g, '"')
+        .replace(/\u201D/g, '"')
+        // Normalizar espacios y saltos de línea
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n')
+        .replace(/[ \t]+/g, ' ')
+        .replace(/\n\s*\n/g, '\n')
+        .trim();
+    
+    // Reemplazar caracteres problemáticos específicos
+    code = code.replace(/¿/g, '?').replace(/¡/g, '!');
+    
+    editor.setValue(code);
+    
+    // Forzar re-renderizado
+    setTimeout(() => {
+        editor.refresh();
+        renderMermaidDiagram();
+        showNotification('Limpieza forzada completada', 'success');
+    }, 200);
+}
+
+function testMermaidRender() {
+    console.log('Probando Mermaid...');
+    const testCode = `flowchart TD
+    A[Inicio] --> B[Proceso]
+    B --> C[Fin]`;
+    
+    const preview = document.getElementById('mermaidPreview');
+    preview.innerHTML = '<div class="p-4"><p class="text-sm text-blue-600">Renderizando diagrama de prueba...</p></div>';
+    
+    try {
+        const diagramId = 'test-diagram-' + Date.now();
+        const container = document.createElement('div');
+        container.className = 'w-full h-full p-4 overflow-auto bg-white';
+        container.id = diagramId;
+        
+        preview.innerHTML = '';
+        preview.appendChild(container);
+        
+        mermaid.render(diagramId + '-svg', testCode, function(svgCode) {
+            container.innerHTML = svgCode;
+            console.log('Mermaid renderizado exitosamente');
+            showNotification('Mermaid funciona correctamente', 'success');
+        });
+        
+    } catch (error) {
+        console.error('Error en test de Mermaid:', error);
+        preview.innerHTML = `<div class="p-4 text-red-600">Error: ${error.message}</div>`;
+        showNotification('Error en Mermaid: ' + error.message, 'error');
+    }
+}
+
+function zoomPreview(factor) {
+    previewZoom *= factor;
+    previewZoom = Math.max(0.1, Math.min(5, previewZoom)); // Limitar zoom entre 0.1x y 5x
+    
+    const svg = document.querySelector('#mermaidPreviewFull svg');
+    if (svg) {
+        // Aplicar zoom manteniendo la posición del pan
+        const scaleX = previewPanOffset.x / previewZoom;
+        const scaleY = previewPanOffset.y / previewZoom;
+        
+        svg.style.transform = `scale(${previewZoom}) translate(${scaleX}px, ${scaleY}px)`;
+        svg.style.transformOrigin = 'center center';
+        svg.style.transition = 'transform 0.1s ease';
+    }
+    
+    // Mostrar nivel de zoom actual
+    showNotification(`Zoom: ${Math.round(previewZoom * 100)}%`, 'info');
+}
+
+function resetPreviewZoom() {
+    previewZoom = 1;
+    previewPanOffset = { x: 0, y: 0 };
+    
+    const svg = document.querySelector('#mermaidPreviewFull svg');
+    if (svg) {
+        svg.style.transform = 'scale(1) translate(0px, 0px)';
+        svg.style.transformOrigin = 'center center';
+        svg.style.transition = 'transform 0.3s ease';
+    }
+    
+    showNotification('Vista restablecida', 'success');
+}
+
+function togglePreviewPan() {
+    previewPanEnabled = !previewPanEnabled;
+    const button = document.getElementById('togglePanPreview');
+    const container = document.getElementById('mermaidPreviewFull');
+    
+    if (previewPanEnabled) {
+        button.classList.add('bg-green-100', 'text-green-700');
+        button.classList.remove('text-gray-500');
+        container.style.cursor = 'grab';
+        
+        // Agregar event listeners para pan con mejor precisión
+        container.addEventListener('mousedown', startPan, { passive: false });
+        document.addEventListener('mousemove', doPan, { passive: false });
+        document.addEventListener('mouseup', endPan, { passive: false });
+        
+        // Agregar soporte para touch (móviles)
+        container.addEventListener('touchstart', handleTouchStart, { passive: false });
+        document.addEventListener('touchmove', handleTouchMove, { passive: false });
+        document.addEventListener('touchend', handleTouchEnd, { passive: false });
+        
+        showNotification('Navegación activada - Arrastra para mover el diagrama', 'info');
+    } else {
+        button.classList.remove('bg-green-100', 'text-green-700');
+        button.classList.add('text-gray-500');
+        container.style.cursor = 'default';
+        
+        // Remover event listeners
+        container.removeEventListener('mousedown', startPan);
+        document.removeEventListener('mousemove', doPan);
+        document.removeEventListener('mouseup', endPan);
+        
+        // Remover touch listeners
+        container.removeEventListener('touchstart', handleTouchStart);
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleTouchEnd);
+        
+        showNotification('Navegación desactivada', 'info');
+    }
+}
+
+// Funciones para soporte táctil
+function handleTouchStart(e) {
+    if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        startPan({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => e.preventDefault(), stopPropagation: () => e.stopPropagation() });
+    }
+}
+
+function handleTouchMove(e) {
+    if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        doPan({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => e.preventDefault(), stopPropagation: () => e.stopPropagation() });
+    }
+}
+
+function handleTouchEnd(e) {
+    endPan({ preventDefault: () => e.preventDefault(), stopPropagation: () => e.stopPropagation() });
+}
+
+function startPan(e) {
+    if (!previewPanEnabled) return;
+    
+    isDragging = true;
+    
+    // Obtener coordenadas relativas al contenedor
+    const container = document.getElementById('mermaidPreviewFull');
+    const rect = container.getBoundingClientRect();
+    
+    previewPanStart.x = (e.clientX - rect.left) - previewPanOffset.x;
+    previewPanStart.y = (e.clientY - rect.top) - previewPanOffset.y;
+    
+    container.style.cursor = 'grabbing';
+    
+    // Deshabilitar selección de texto durante el arrastre
+    document.body.style.userSelect = 'none';
+    
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function doPan(e) {
+    if (!previewPanEnabled || !isDragging) return;
+    
+    // Obtener coordenadas relativas al contenedor
+    const container = document.getElementById('mermaidPreviewFull');
+    const rect = container.getBoundingClientRect();
+    
+    // Calcular nuevo offset con mayor precisión
+    const newX = (e.clientX - rect.left) - previewPanStart.x;
+    const newY = (e.clientY - rect.top) - previewPanStart.y;
+    
+    // Aplicar suavizado para movimientos más fluidos
+    previewPanOffset.x = newX;
+    previewPanOffset.y = newY;
+    
+    const svg = document.querySelector('#mermaidPreviewFull svg');
+    if (svg) {
+        // Aplicar transformación con mayor precisión
+        const scaleX = previewPanOffset.x / previewZoom;
+        const scaleY = previewPanOffset.y / previewZoom;
+        
+        svg.style.transform = `scale(${previewZoom}) translate(${scaleX}px, ${scaleY}px)`;
+        svg.style.transformOrigin = 'center center';
+    }
+    
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function endPan(e) {
+    if (!previewPanEnabled) return;
+    
+    isDragging = false;
+    const container = document.getElementById('mermaidPreviewFull');
+    container.style.cursor = 'grab';
+    
+    // Rehabilitar selección de texto
+    document.body.style.userSelect = '';
+    
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function togglePreview() {
+    const codeEditor = document.getElementById('codeEditor');
+    const fullPreview = document.getElementById('fullPreview');
+    const previewBtn = document.getElementById('previewBtn');
+    
+    if (fullPreview.classList.contains('hidden')) {
+        // Mostrar vista previa pantalla completa
+        codeEditor.classList.add('hidden');
+        fullPreview.classList.remove('hidden');
+        previewBtn.innerHTML = '<i class="fas fa-code mr-2"></i>Mostrar Editor';
+        previewBtn.className = 'bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors';
+        
+        // Renderizar en la vista previa completa
+        renderFullPreview();
+    } else {
+        // Mostrar editor normal
+        fullPreview.classList.add('hidden');
+        codeEditor.classList.remove('hidden');
+        previewBtn.innerHTML = '<i class="fas fa-eye mr-2"></i>Vista Previa';
+        previewBtn.className = 'bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors';
+    }
+}
+
+function updateEditorTitle(processTitle, department) {
+    const titleElement = document.getElementById('editorTitle');
+    const subtitleElement = document.getElementById('editorSubtitle');
+    
+    if (processTitle) {
+        titleElement.textContent = processTitle;
+        if (department) {
+            subtitleElement.textContent = `Departamento: ${department}`;
+        } else {
+            subtitleElement.textContent = 'Editando proceso organizacional';
+        }
+    } else {
+        titleElement.textContent = 'Editor de Fluogramas';
+        subtitleElement.textContent = 'Crea y edita procesos organizacionales';
+    }
+}
+
+function testPDFLibrary() {
+    const svgElement = document.querySelector('#mermaidPreview svg');
+    if (!svgElement) {
+        showNotification('Primero crea un diagrama', 'error');
+        return;
+    }
+    
+    try {
+        // Capturar el área del diagrama como imagen
+        const previewDiv = document.getElementById('mermaidPreview');
+        
+        // Usar la API nativa del navegador para capturar
+        if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+            showNotification('Usa Ctrl+Shift+S para capturar pantalla, o clic derecho > "Guardar imagen como"', 'info');
+        } else {
+            // Método alternativo: copiar SVG al portapapeles
+            const svgData = new XMLSerializer().serializeToString(svgElement);
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(svgData).then(() => {
+                    showNotification('SVG copiado al portapapeles. Pégalo en un editor de imágenes', 'success');
+                });
+            } else {
+                showNotification('Usa clic derecho en el diagrama > "Guardar imagen como"', 'info');
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Usa clic derecho en el diagrama > "Guardar imagen como"', 'info');
+    }
+}
+
+function renderFullPreview() {
+    const code = editor.getValue();
+    const preview = document.getElementById('mermaidPreviewFull');
+    
+    if (!code.trim()) {
+        preview.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500"><div class="text-center"><i class="fas fa-code text-6xl mb-4"></i><p class="text-xl">No hay código para mostrar</p><p class="text-sm mt-2">Escribe código Mermaid en el editor</p></div></div>';
+        return;
+    }
+    
+    try {
+        // Limpiar preview anterior
+        preview.innerHTML = '';
+        
+        // Crear ID único para el diagrama
+        const diagramId = 'full-diagram-' + Date.now();
+        
+        // Crear contenedor
+        const container = document.createElement('div');
+        container.className = 'w-full h-full flex items-center justify-center bg-white';
+        container.id = diagramId;
+        
+        preview.appendChild(container);
+        
+        // Renderizar usando mermaid.render
+        mermaid.render(diagramId + '-svg', code, function(svgCode) {
+            container.innerHTML = svgCode;
+            
+            // Ajustar SVG para pantalla completa
+            const svg = container.querySelector('svg');
+            if (svg) {
+                svg.style.maxWidth = '90%';
+                svg.style.maxHeight = '90%';
+                svg.style.width = 'auto';
+                svg.style.height = 'auto';
+                svg.style.display = 'block';
+                svg.style.margin = '0 auto';
+                svg.style.transition = 'transform 0.2s ease';
+                
+                // Resetear zoom y pan al renderizar nuevo diagrama
+                previewZoom = 1;
+                previewPanOffset = { x: 0, y: 0 };
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error renderizando vista previa completa:', error);
+        preview.innerHTML = `<div class="flex items-center justify-center h-full text-red-500"><div class="text-center"><i class="fas fa-exclamation-triangle text-4xl mb-2"></i><p class="text-xl">Error en el diagrama</p><p class="text-sm">${error.message}</p></div></div>`;
+    }
+}
+</script>
+{% endblock %}

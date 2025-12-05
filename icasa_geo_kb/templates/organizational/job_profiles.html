@@ -1,0 +1,176 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}📋 Perfiles de Puesto - ICASA-GEO{% endblock %}
+{% block page_title %}📋 Perfiles de Puesto - La "Biblia" del Puesto{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header con estadísticas -->
+    <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold mb-2">📋 Perfiles de Puesto</h1>
+                <p class="text-blue-100">Catálogo completo de descripciones y requisitos por puesto</p>
+            </div>
+            <div class="text-right">
+                <p class="text-3xl font-bold">{{ profiles.count }}</p>
+                <p class="text-blue-100">Perfiles definidos</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros y búsqueda -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">Catálogo de Perfiles</h2>
+            <div class="flex items-center space-x-4">
+                <input type="text" 
+                       placeholder="Buscar por puesto o departamento..." 
+                       class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Todos los departamentos</option>
+                    <option value="rrhh">Recursos Humanos</option>
+                    <option value="finanzas">Finanzas</option>
+                    <option value="operaciones">Operaciones</option>
+                    <option value="ventas">Ventas</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Grid de perfiles -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for profile in profiles %}
+            <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                <!-- Header del perfil -->
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="font-semibold text-gray-900">{{ profile.position.title }}</h3>
+                            <p class="text-sm text-gray-600">{{ profile.position.department }}</p>
+                        </div>
+                    </div>
+                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                        Nivel {{ profile.position.level }}
+                    </span>
+                </div>
+
+                <!-- Información clave -->
+                <div class="space-y-3 mb-4">
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">Objetivo:</p>
+                        <p class="text-sm text-gray-600">{{ profile.objective|truncatechars:100 }}</p>
+                    </div>
+                    
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">Escolaridad:</p>
+                        <p class="text-sm text-gray-600">{{ profile.education_required }}</p>
+                    </div>
+                </div>
+
+                <!-- Indicadores -->
+                <div class="flex items-center justify-between text-xs text-gray-500 mb-4">
+                    <span>{{ profile.performance_indicators|length }} KPIs</span>
+                    <span>{{ profile.owned_processes|length }} Procesos</span>
+                    <span>{{ profile.technical_skills|length }} Habilidades</span>
+                </div>
+
+                <!-- Acciones -->
+                <div class="flex space-x-2">
+                    <a href="{% url 'organizational:job_profile_detail' profile.id %}" 
+                       class="flex-1 bg-blue-500 text-white text-center py-2 px-4 rounded-lg text-sm hover:bg-blue-600 transition-colors">
+                        Ver Detalle
+                    </a>
+                    <button class="bg-green-500 text-white py-2 px-4 rounded-lg text-sm hover:bg-green-600 transition-colors"
+                            onclick="generatePDF({{ profile.id }})">
+                        📄 PDF
+                    </button>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full text-center py-12">
+                <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No hay perfiles definidos</h3>
+                <p class="text-gray-600">Comienza creando perfiles para los puestos de la organización.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Acciones rápidas -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">🚀 Acciones Rápidas</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg class="w-8 h-8 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                <div class="text-left">
+                    <p class="font-medium text-gray-900">Crear Perfil</p>
+                    <p class="text-sm text-gray-600">Nuevo perfil de puesto</p>
+                </div>
+            </button>
+
+            <button class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg class="w-8 h-8 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <div class="text-left">
+                    <p class="font-medium text-gray-900">Exportar Todo</p>
+                    <p class="text-sm text-gray-600">Descargar todos los perfiles</p>
+                </div>
+            </button>
+
+            <button class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg class="w-8 h-8 text-purple-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+                <div class="text-left">
+                    <p class="font-medium text-gray-900">Reporte</p>
+                    <p class="text-sm text-gray-600">Análisis de perfiles</p>
+                </div>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function generatePDF(profileId) {
+    // Función para generar PDF del perfil
+    window.open(`/organizational/perfiles/${profileId}/pdf/`, '_blank');
+}
+
+// Filtros en tiempo real
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('input[placeholder*="Buscar"]');
+    const departmentSelect = document.querySelector('select');
+    
+    function filterProfiles() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedDept = departmentSelect.value.toLowerCase();
+        
+        document.querySelectorAll('.grid > div').forEach(card => {
+            if (card.classList.contains('col-span-full')) return; // Skip empty state
+            
+            const title = card.querySelector('h3').textContent.toLowerCase();
+            const dept = card.querySelector('.text-sm.text-gray-600').textContent.toLowerCase();
+            
+            const matchesSearch = title.includes(searchTerm) || dept.includes(searchTerm);
+            const matchesDept = !selectedDept || dept.includes(selectedDept);
+            
+            card.style.display = (matchesSearch && matchesDept) ? 'block' : 'none';
+        });
+    }
+    
+    searchInput.addEventListener('input', filterProfiles);
+    departmentSelect.addEventListener('change', filterProfiles);
+});
+</script>
+{% endblock %}

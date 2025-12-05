@@ -1,0 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  /* Botones ICASA */
+  .btn-icasa-primary {
+    @apply bg-icasa-primary hover:bg-icasa-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-icasa;
+  }
+  
+  .btn-icasa-secondary {
+    @apply bg-white hover:bg-icasa-50 text-icasa-dark border border-icasa-primary font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .btn-icasa-outline {
+    @apply border border-icasa-primary text-icasa-primary hover:bg-icasa-primary hover:text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  /* Cards ICASA */
+  .card-icasa {
+    @apply bg-white rounded-xl shadow-icasa border border-gray-100 p-6;
+  }
+  
+  .card-icasa-hover {
+    @apply card-icasa hover:shadow-icasa-lg transition-shadow duration-200;
+  }
+  
+  /* Inputs ICASA */
+  .input-icasa {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-icasa-primary focus:border-transparent;
+  }
+  
+  /* Sidebar */
+  .sidebar-item {
+    @apply flex items-center px-4 py-3 text-gray-700 hover:bg-icasa-50 hover:text-icasa-dark rounded-lg transition-colors duration-200;
+  }
+  
+  .sidebar-item-active {
+    @apply sidebar-item bg-icasa-primary text-white hover:bg-icasa-dark;
+  }
+  
+  /* Status badges */
+  .badge-draft {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800;
+  }
+  
+  .badge-review {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800;
+  }
+  
+  .badge-approved {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-icasa-100 text-icasa-800;
+  }
+  
+  .badge-rejected {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800;
+  }
+}

@@ -1,0 +1,673 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Crear Documento - Información Corporativa{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header Específico -->
+    <div class="bg-white border-b border-gray-200 shadow-sm">
+        <div class="px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-building text-blue-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Información Corporativa</h1>
+                        <p class="text-gray-600">Documentos oficiales de la empresa ICASA</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <button onclick="history.back()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                        <i class="fas fa-arrow-left mr-2"></i>Volver
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-6">
+        <!-- Asistente de Creación -->
+        <div class="max-w-4xl mx-auto">
+            <!-- Paso 1: Seleccionar Tipo de Documento -->
+            <div id="step1" class="bg-white rounded-xl shadow-sm p-6 mb-6">
+                <h2 class="text-xl font-semibold mb-4 flex items-center">
+                    <span class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center mr-3 text-sm">1</span>
+                    Selecciona el tipo de documento
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-green-500 cursor-pointer transition-colors" onclick="selectDocType('mision-vision')">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-bullseye text-2xl text-green-600 mr-3"></i>
+                            <h3 class="font-semibold">Misión, Visión y Valores</h3>
+                        </div>
+                        <p class="text-sm text-gray-600">Documenta la razón de ser, aspiraciones y principios de ICASA</p>
+                        <div class="mt-3 text-xs text-green-600">
+                            ✓ Plantilla estructurada ✓ Campos obligatorios ✓ Formato estándar
+                        </div>
+                    </div>
+                    
+                    <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-green-500 cursor-pointer transition-colors" onclick="selectDocType('historia')">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-history text-2xl text-green-600 mr-3"></i>
+                            <h3 class="font-semibold">Historia Empresarial</h3>
+                        </div>
+                        <p class="text-sm text-gray-600">Cronología y evolución de la empresa desde su fundación</p>
+                        <div class="mt-3 text-xs text-green-600">
+                            ✓ Línea de tiempo ✓ Hitos importantes ✓ Logros destacados
+                        </div>
+                    </div>
+                    
+                    <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-green-500 cursor-pointer transition-colors" onclick="selectDocType('estructura')">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-sitemap text-2xl text-green-600 mr-3"></i>
+                            <h3 class="font-semibold">Estructura Organizacional</h3>
+                        </div>
+                        <p class="text-sm text-gray-600">Organigrama, jerarquías y líneas de reporte</p>
+                        <div class="mt-3 text-xs text-green-600">
+                            ✓ Niveles jerárquicos ✓ Responsabilidades ✓ Organigramas
+                        </div>
+                    </div>
+                    
+                    <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-green-500 cursor-pointer transition-colors" onclick="selectDocType('directorio')">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-users text-2xl text-green-600 mr-3"></i>
+                            <h3 class="font-semibold">Directorio Ejecutivo</h3>
+                        </div>
+                        <p class="text-sm text-gray-600">Información de contacto y perfiles de ejecutivos</p>
+                        <div class="mt-3 text-xs text-green-600">
+                            ✓ Datos de contacto ✓ Biografías ✓ Responsabilidades
+                        </div>
+                    </div>
+                    
+                    <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-green-500 cursor-pointer transition-colors" onclick="selectDocType('politicas-corporativas')">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-shield-alt text-2xl text-green-600 mr-3"></i>
+                            <h3 class="font-semibold">Políticas Corporativas</h3>
+                        </div>
+                        <p class="text-sm text-gray-600">Políticas generales de gobierno corporativo y ética</p>
+                        <div class="mt-3 text-xs text-green-600">
+                            ✓ Código de ética ✓ Gobierno corporativo ✓ Compliance
+                        </div>
+                    </div>
+                    
+                    <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-green-500 cursor-pointer transition-colors" onclick="selectDocType('certificaciones')">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-certificate text-2xl text-green-600 mr-3"></i>
+                            <h3 class="font-semibold">Certificaciones y Licencias</h3>
+                        </div>
+                        <p class="text-sm text-gray-600">Documentación de certificaciones, licencias y acreditaciones</p>
+                        <div class="mt-3 text-xs text-green-600">
+                            ✓ ISO 9001 ✓ Licencias SUGESE ✓ Certificaciones técnicas
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paso 2: Información Básica -->
+            <div id="step2" class="hidden bg-white rounded-xl shadow-sm p-6 mb-6">
+                <h2 class="text-xl font-semibold mb-4 flex items-center">
+                    <span class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center mr-3 text-sm">2</span>
+                    Información del documento
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Título del Documento</label>
+                        <input type="text" id="docTitle" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" 
+                               placeholder="Ej: Misión y Visión ICASA 2024">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Código del Documento</label>
+                        <input type="text" id="docCode" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" 
+                               placeholder="Ej: IC-001">
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                        <textarea id="docDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" 
+                                  placeholder="Breve descripción del contenido del documento"></textarea>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between mt-6">
+                    <button onclick="showStep(1)" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                        <i class="fas fa-arrow-left mr-2"></i>Anterior
+                    </button>
+                    <button onclick="showStep(3)" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                        Continuar <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Paso 3: Editor Especializado -->
+            <div id="step3" class="hidden bg-white rounded-xl shadow-sm p-6">
+                <h2 class="text-xl font-semibold mb-4 flex items-center">
+                    <span class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center mr-3 text-sm">3</span>
+                    Contenido del documento
+                </h2>
+                
+                <!-- Campos Específicos por Tipo -->
+                
+                <!-- Misión, Visión y Valores -->
+                <div id="mision-vision-fields" class="hidden">
+                    <div class="grid grid-cols-1 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Misión de ICASA <span class="text-red-500">*</span></label>
+                            <textarea id="mision" rows="4" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" 
+                                      placeholder="Describe la razón de ser de ICASA, qué hacemos y para quién..."></textarea>
+                            <div class="text-xs text-gray-500 mt-1">Mínimo 50 caracteres, máximo 500</div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Visión de ICASA <span class="text-red-500">*</span></label>
+                            <textarea id="vision" rows="4" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" 
+                                      placeholder="Describe el futuro deseado de ICASA, dónde queremos estar..."></textarea>
+                            <div class="text-xs text-gray-500 mt-1">Mínimo 50 caracteres, máximo 500</div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Valores Corporativos <span class="text-red-500">*</span></label>
+                            <div id="valores-container">
+                                <div class="flex items-center mb-2">
+                                    <input type="text" placeholder="Nombre del valor" class="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500" required>
+                                    <input type="text" placeholder="Descripción" class="flex-2 px-3 py-2 border-t border-b border-gray-300 focus:ring-2 focus:ring-green-500" required>
+                                    <button type="button" onclick="addValor()" class="px-3 py-2 bg-green-500 text-white rounded-r-lg hover:bg-green-600">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" onclick="addValor()" class="text-sm text-green-600 hover:text-green-800">
+                                <i class="fas fa-plus mr-1"></i>Agregar otro valor
+                            </button>
+                            <div class="text-xs text-gray-500 mt-1">Mínimo 3 valores corporativos</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Historia Empresarial -->
+                <div id="historia-fields" class="hidden">
+                    <div class="grid grid-cols-1 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Año de Fundación <span class="text-red-500">*</span></label>
+                            <input type="number" id="fundacion" min="1900" max="2024" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" 
+                                   placeholder="Ej: 1995" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Fundadores <span class="text-red-500">*</span></label>
+                            <textarea id="fundadores" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" 
+                                      placeholder="Nombres y breve descripción de los fundadores..." required></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Hitos Importantes</label>
+                            <div id="hitos-container">
+                                <div class="grid grid-cols-12 gap-2 mb-2">
+                                    <input type="number" placeholder="Año" class="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                    <input type="text" placeholder="Descripción del hito" class="col-span-9 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                    <button type="button" onclick="addHito()" class="col-span-1 px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" onclick="addHito()" class="text-sm text-green-600 hover:text-green-800">
+                                <i class="fas fa-plus mr-1"></i>Agregar hito
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Estructura Organizacional -->
+                <div id="estructura-fields" class="hidden">
+                    <div class="grid grid-cols-1 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Estructura</label>
+                            <select id="tipoEstructura" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                <option value="jerarquica">Jerárquica Tradicional</option>
+                                <option value="funcional">Funcional por Departamentos</option>
+                                <option value="matricial">Matricial</option>
+                                <option value="horizontal">Horizontal</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Número de Niveles Jerárquicos</label>
+                            <input type="number" id="nivelesJerarquicos" min="1" max="10" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" 
+                                   placeholder="Ej: 5">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Departamentos Principales</label>
+                            <div id="departamentos-container">
+                                <div class="flex items-center mb-2">
+                                    <input type="text" placeholder="Nombre del departamento" class="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500">
+                                    <input type="text" placeholder="Responsable" class="flex-1 px-3 py-2 border-t border-b border-gray-300 focus:ring-2 focus:ring-green-500">
+                                    <button type="button" onclick="addDepartamento()" class="px-3 py-2 bg-green-500 text-white rounded-r-lg hover:bg-green-600">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" onclick="addDepartamento()" class="text-sm text-green-600 hover:text-green-800">
+                                <i class="fas fa-plus mr-1"></i>Agregar departamento
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Directorio Ejecutivo -->
+                <div id="directorio-fields" class="hidden">
+                    <div class="grid grid-cols-1 gap-6">
+                        <div id="ejecutivos-container">
+                            <div class="border border-gray-200 rounded-lg p-4 mb-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <input type="text" placeholder="Nombre completo" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                    <input type="text" placeholder="Cargo" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                    <input type="email" placeholder="Email" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                    <input type="tel" placeholder="Teléfono" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                </div>
+                                <textarea placeholder="Biografía profesional (opcional)" rows="2" class="w-full mt-4 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"></textarea>
+                                <button type="button" onclick="this.parentElement.remove()" class="mt-2 text-sm text-red-600 hover:text-red-800">
+                                    <i class="fas fa-trash mr-1"></i>Eliminar ejecutivo
+                                </button>
+                            </div>
+                        </div>
+                        <button type="button" onclick="addEjecutivo()" class="text-sm text-green-600 hover:text-green-800">
+                            <i class="fas fa-plus mr-1"></i>Agregar ejecutivo
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Políticas Corporativas -->
+                <div id="politicas-corporativas-fields" class="hidden">
+                    <div class="grid grid-cols-1 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Política</label>
+                            <select id="tipoPolitica" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                <option value="etica">Código de Ética</option>
+                                <option value="gobierno">Gobierno Corporativo</option>
+                                <option value="compliance">Compliance y Cumplimiento</option>
+                                <option value="anticorrupcion">Anticorrupción</option>
+                                <option value="conflictos">Conflictos de Interés</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Principios Fundamentales</label>
+                            <textarea id="principios" rows="5" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" 
+                                      placeholder="Describe los principios fundamentales de esta política..."></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Alcance y Aplicación</label>
+                            <textarea id="alcance" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" 
+                                      placeholder="Define quién debe cumplir esta política y en qué situaciones..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Certificaciones y Licencias -->
+                <div id="certificaciones-fields" class="hidden">
+                    <div class="grid grid-cols-1 gap-6">
+                        <div id="certificaciones-container">
+                            <div class="border border-gray-200 rounded-lg p-4 mb-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <input type="text" placeholder="Nombre de la certificación" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                    <input type="text" placeholder="Entidad emisora" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                    <input type="date" placeholder="Fecha de emisión" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                    <input type="date" placeholder="Fecha de vencimiento" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                </div>
+                                <input type="text" placeholder="Número de certificado" class="w-full mt-4 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                <button type="button" onclick="this.parentElement.remove()" class="mt-2 text-sm text-red-600 hover:text-red-800">
+                                    <i class="fas fa-trash mr-1"></i>Eliminar certificación
+                                </button>
+                            </div>
+                        </div>
+                        <button type="button" onclick="addCertificacion()" class="text-sm text-green-600 hover:text-green-800">
+                            <i class="fas fa-plus mr-1"></i>Agregar certificación
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between mt-8">
+                    <button onclick="showStep(2)" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                        <i class="fas fa-arrow-left mr-2"></i>Anterior
+                    </button>
+                    <button onclick="createDocument()" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600">
+                        <i class="fas fa-save mr-2"></i>Crear Documento
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedDocType = null;
+
+function selectDocType(type) {
+    selectedDocType = type;
+    
+    const titles = {
+        'mision-vision': 'Misión, Visión y Valores ICASA',
+        'historia': 'Historia Empresarial ICASA',
+        'estructura': 'Estructura Organizacional ICASA',
+        'directorio': 'Directorio Ejecutivo ICASA',
+        'politicas-corporativas': 'Políticas Corporativas ICASA',
+        'certificaciones': 'Certificaciones y Licencias ICASA'
+    };
+    
+    document.getElementById('docTitle').value = titles[type] || '';
+    
+    const codes = {
+        'mision-vision': 'IC-MVV-001',
+        'historia': 'IC-HIS-001',
+        'estructura': 'IC-ORG-001',
+        'directorio': 'IC-DIR-001',
+        'politicas-corporativas': 'IC-POL-001',
+        'certificaciones': 'IC-CER-001'
+    };
+    
+    document.getElementById('docCode').value = codes[type] || '';
+    
+    showStep(2);
+}
+
+function showStep(step) {
+    document.getElementById('step1').classList.add('hidden');
+    document.getElementById('step2').classList.add('hidden');
+    document.getElementById('step3').classList.add('hidden');
+    
+    document.getElementById(`step${step}`).classList.remove('hidden');
+    
+    if (step === 3 && selectedDocType) {
+        // Ocultar todos los campos
+        const fieldTypes = ['mision-vision', 'historia', 'estructura', 'directorio', 'politicas-corporativas', 'certificaciones'];
+        fieldTypes.forEach(type => {
+            const element = document.getElementById(`${type}-fields`);
+            if (element) element.classList.add('hidden');
+        });
+        
+        // Mostrar campos del tipo seleccionado
+        const selectedFields = document.getElementById(`${selectedDocType}-fields`);
+        if (selectedFields) {
+            selectedFields.classList.remove('hidden');
+        }
+    }
+}
+
+// Funciones para campos dinámicos
+function addValor() {
+    const container = document.getElementById('valores-container');
+    const newValor = document.createElement('div');
+    newValor.className = 'flex items-center mb-2';
+    newValor.innerHTML = `
+        <input type="text" placeholder="Nombre del valor" class="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500" required>
+        <input type="text" placeholder="Descripción" class="flex-2 px-3 py-2 border-t border-b border-gray-300 focus:ring-2 focus:ring-green-500" required>
+        <button type="button" onclick="this.parentElement.remove()" class="px-3 py-2 bg-red-500 text-white rounded-r-lg hover:bg-red-600">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    container.appendChild(newValor);
+}
+
+function addHito() {
+    const container = document.getElementById('hitos-container');
+    const newHito = document.createElement('div');
+    newHito.className = 'grid grid-cols-12 gap-2 mb-2';
+    newHito.innerHTML = `
+        <input type="number" placeholder="Año" class="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+        <input type="text" placeholder="Descripción del hito" class="col-span-9 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+        <button type="button" onclick="this.parentElement.remove()" class="col-span-1 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    container.appendChild(newHito);
+}
+
+function addDepartamento() {
+    const container = document.getElementById('departamentos-container');
+    const newDept = document.createElement('div');
+    newDept.className = 'flex items-center mb-2';
+    newDept.innerHTML = `
+        <input type="text" placeholder="Nombre del departamento" class="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500">
+        <input type="text" placeholder="Responsable" class="flex-1 px-3 py-2 border-t border-b border-gray-300 focus:ring-2 focus:ring-green-500">
+        <button type="button" onclick="this.parentElement.remove()" class="px-3 py-2 bg-red-500 text-white rounded-r-lg hover:bg-red-600">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    container.appendChild(newDept);
+}
+
+function addEjecutivo() {
+    const container = document.getElementById('ejecutivos-container');
+    const newEjec = document.createElement('div');
+    newEjec.className = 'border border-gray-200 rounded-lg p-4 mb-4';
+    newEjec.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input type="text" placeholder="Nombre completo" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+            <input type="text" placeholder="Cargo" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+            <input type="email" placeholder="Email" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+            <input type="tel" placeholder="Teléfono" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+        </div>
+        <textarea placeholder="Biografía profesional (opcional)" rows="2" class="w-full mt-4 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"></textarea>
+        <button type="button" onclick="this.parentElement.remove()" class="mt-2 text-sm text-red-600 hover:text-red-800">
+            <i class="fas fa-trash mr-1"></i>Eliminar ejecutivo
+        </button>
+    `;
+    container.appendChild(newEjec);
+}
+
+function addCertificacion() {
+    const container = document.getElementById('certificaciones-container');
+    const newCert = document.createElement('div');
+    newCert.className = 'border border-gray-200 rounded-lg p-4 mb-4';
+    newCert.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input type="text" placeholder="Nombre de la certificación" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+            <input type="text" placeholder="Entidad emisora" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+            <input type="date" placeholder="Fecha de emisión" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+            <input type="date" placeholder="Fecha de vencimiento" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+        </div>
+        <input type="text" placeholder="Número de certificado" class="w-full mt-4 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+        <button type="button" onclick="this.parentElement.remove()" class="mt-2 text-sm text-red-600 hover:text-red-800">
+            <i class="fas fa-trash mr-1"></i>Eliminar certificación
+        </button>
+    `;
+    container.appendChild(newCert);
+}
+
+function createDocument() {
+    // Validar campos obligatorios
+    if (!validateForm()) {
+        return;
+    }
+    
+    const data = {
+        type: selectedDocType,
+        title: document.getElementById('docTitle').value,
+        code: document.getElementById('docCode').value,
+        description: document.getElementById('docDescription').value
+    };
+    
+    // Recopilar datos específicos por tipo
+    switch(selectedDocType) {
+        case 'mision-vision':
+            data.mision = document.getElementById('mision').value;
+            data.vision = document.getElementById('vision').value;
+            data.valores = collectValores();
+            break;
+        case 'historia':
+            data.fundacion = document.getElementById('fundacion').value;
+            data.fundadores = document.getElementById('fundadores').value;
+            data.hitos = collectHitos();
+            break;
+        case 'estructura':
+            data.tipoEstructura = document.getElementById('tipoEstructura').value;
+            data.nivelesJerarquicos = document.getElementById('nivelesJerarquicos').value;
+            data.departamentos = collectDepartamentos();
+            break;
+        case 'directorio':
+            data.ejecutivos = collectEjecutivos();
+            break;
+        case 'politicas-corporativas':
+            data.tipoPolitica = document.getElementById('tipoPolitica').value;
+            data.principios = document.getElementById('principios').value;
+            data.alcance = document.getElementById('alcance').value;
+            break;
+        case 'certificaciones':
+            data.certificaciones = collectCertificaciones();
+            break;
+    }
+    
+    // Simular guardado
+    const loadingBtn = document.querySelector('button[onclick="createDocument()"]');
+    const originalText = loadingBtn.innerHTML;
+    loadingBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creando...';
+    loadingBtn.disabled = true;
+    
+    setTimeout(() => {
+        alert('✅ Documento creado exitosamente\n\nTipo: ' + selectedDocType + '\nTítulo: ' + data.title);
+        window.location.href = '/manual/';
+    }, 2000);
+}
+
+// Funciones de validación y recolección de datos
+function validateForm() {
+    const title = document.getElementById('docTitle').value.trim();
+    const code = document.getElementById('docCode').value.trim();
+    
+    if (!title || !code) {
+        alert('⚠️ Por favor completa todos los campos obligatorios');
+        return false;
+    }
+    
+    // Validaciones específicas por tipo
+    if (selectedDocType === 'mision-vision') {
+        const mision = document.getElementById('mision').value.trim();
+        const vision = document.getElementById('vision').value.trim();
+        
+        if (!mision || mision.length < 50) {
+            alert('⚠️ La misión debe tener al menos 50 caracteres');
+            return false;
+        }
+        
+        if (!vision || vision.length < 50) {
+            alert('⚠️ La visión debe tener al menos 50 caracteres');
+            return false;
+        }
+        
+        const valores = collectValores();
+        if (valores.length < 3) {
+            alert('⚠️ Debe agregar al menos 3 valores corporativos');
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+function collectValores() {
+    const valores = [];
+    const container = document.getElementById('valores-container');
+    const rows = container.querySelectorAll('.flex.items-center');
+    
+    rows.forEach(row => {
+        const inputs = row.querySelectorAll('input');
+        if (inputs.length >= 2 && inputs[0].value.trim() && inputs[1].value.trim()) {
+            valores.push({
+                nombre: inputs[0].value.trim(),
+                descripcion: inputs[1].value.trim()
+            });
+        }
+    });
+    
+    return valores;
+}
+
+function collectHitos() {
+    const hitos = [];
+    const container = document.getElementById('hitos-container');
+    const rows = container.querySelectorAll('.grid.grid-cols-12');
+    
+    rows.forEach(row => {
+        const inputs = row.querySelectorAll('input');
+        if (inputs.length >= 2 && inputs[0].value && inputs[1].value.trim()) {
+            hitos.push({
+                ano: inputs[0].value,
+                descripcion: inputs[1].value.trim()
+            });
+        }
+    });
+    
+    return hitos;
+}
+
+function collectDepartamentos() {
+    const departamentos = [];
+    const container = document.getElementById('departamentos-container');
+    const rows = container.querySelectorAll('.flex.items-center');
+    
+    rows.forEach(row => {
+        const inputs = row.querySelectorAll('input');
+        if (inputs.length >= 2 && inputs[0].value.trim() && inputs[1].value.trim()) {
+            departamentos.push({
+                nombre: inputs[0].value.trim(),
+                responsable: inputs[1].value.trim()
+            });
+        }
+    });
+    
+    return departamentos;
+}
+
+function collectEjecutivos() {
+    const ejecutivos = [];
+    const container = document.getElementById('ejecutivos-container');
+    const cards = container.querySelectorAll('.border.border-gray-200');
+    
+    cards.forEach(card => {
+        const inputs = card.querySelectorAll('input');
+        const textarea = card.querySelector('textarea');
+        
+        if (inputs.length >= 4 && inputs[0].value.trim() && inputs[1].value.trim()) {
+            ejecutivos.push({
+                nombre: inputs[0].value.trim(),
+                cargo: inputs[1].value.trim(),
+                email: inputs[2].value.trim(),
+                telefono: inputs[3].value.trim(),
+                biografia: textarea ? textarea.value.trim() : ''
+            });
+        }
+    });
+    
+    return ejecutivos;
+}
+
+function collectCertificaciones() {
+    const certificaciones = [];
+    const container = document.getElementById('certificaciones-container');
+    const cards = container.querySelectorAll('.border.border-gray-200');
+    
+    cards.forEach(card => {
+        const inputs = card.querySelectorAll('input');
+        
+        if (inputs.length >= 5 && inputs[0].value.trim() && inputs[1].value.trim()) {
+            certificaciones.push({
+                nombre: inputs[0].value.trim(),
+                entidad: inputs[1].value.trim(),
+                fechaEmision: inputs[2].value,
+                fechaVencimiento: inputs[3].value,
+                numero: inputs[4].value.trim()
+            });
+        }
+    });
+    
+    return certificaciones;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}{% if is_edit %}Editar{% else %}Crear{% endif %} Puesto - ICASA-GEO{% endblock %}
+{% block page_title %}{% if is_edit %}✏️ Editar Puesto{% else %}➕ Crear Puesto{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-lg shadow-md">
+        <!-- Header -->
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">
+                        {% if is_edit %}Editar Puesto: {{ position.title }}{% else %}Crear Nuevo Puesto{% endif %}
+                    </h2>
+                    <p class="text-gray-600">Complete la información del puesto organizacional</p>
+                </div>
+                <a href="{% url 'organizational:position_admin_list' %}" 
+                   class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    <span>Volver</span>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Formulario -->
+        <form method="post" class="p-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Información Básica -->
+                <div class="md:col-span-2">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Información Básica
+                    </h3>
+                </div>
+                
+                <!-- Título del Puesto -->
+                <div>
+                    <label for="title" class="block text-sm font-medium text-gray-700 mb-2">
+                        Título del Puesto <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" 
+                           id="title" 
+                           name="title" 
+                           value="{% if is_edit %}{{ position.title }}{% endif %}"
+                           required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                           placeholder="Ej: Gerente de Operaciones">
+                </div>
+                
+                <!-- Departamento -->
+                <div>
+                    <label for="department" class="block text-sm font-medium text-gray-700 mb-2">
+                        Departamento <span class="text-red-500">*</span>
+                    </label>
+                    <select id="department" 
+                            name="department" 
+                            required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        <option value="">Seleccionar departamento</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept }}" {% if is_edit and position.department == dept %}selected{% endif %}>{{ dept }}</option>
+                        {% endfor %}
+                        <option value="Direccion General" {% if is_edit and position.department == "Direccion General" %}selected{% endif %}>Direccion General</option>
+                        <option value="Direccion Comercial" {% if is_edit and position.department == "Direccion Comercial" %}selected{% endif %}>Direccion Comercial</option>
+                        <option value="Direccion Administrativa" {% if is_edit and position.department == "Direccion Administrativa" %}selected{% endif %}>Direccion Administrativa</option>
+                        <option value="Operaciones" {% if is_edit and position.department == "Operaciones" %}selected{% endif %}>Operaciones</option>
+                        <option value="Porteo" {% if is_edit and position.department == "Porteo" %}selected{% endif %}>Porteo</option>
+                        <option value="Devoluciones" {% if is_edit and position.department == "Devoluciones" %}selected{% endif %}>Devoluciones</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">O escriba un nuevo departamento en el campo de texto</p>
+                    <input type="text" 
+                           id="custom_department" 
+                           placeholder="Escribir nuevo departamento..."
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent mt-2">
+                </div>
+                
+                <!-- Nivel Jerárquico -->
+                <div>
+                    <label for="level" class="block text-sm font-medium text-gray-700 mb-2">
+                        Nivel Jerárquico <span class="text-red-500">*</span>
+                    </label>
+                    <select id="level" 
+                            name="level" 
+                            required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        <option value="1" {% if is_edit and position.level == 1 %}selected{% endif %}>Nivel 1 - Direccion General</option>
+                        <option value="2" {% if is_edit and position.level == 2 %}selected{% endif %}>Nivel 2 - Direccion</option>
+                        <option value="3" {% if is_edit and position.level == 3 %}selected{% endif %}>Nivel 3 - Gerencia</option>
+                        <option value="4" {% if is_edit and position.level == 4 %}selected{% endif %}>Nivel 4 - Jefatura</option>
+                        <option value="5" {% if is_edit and position.level == 5 %}selected{% endif %}>Nivel 5 - Supervision</option>
+                        <option value="6" {% if is_edit and position.level == 6 %}selected{% endif %}>Nivel 6 - Operativo</option>
+                    </select>
+                </div>
+                
+                <!-- Reporta a -->
+                <div>
+                    <label for="reports_to" class="block text-sm font-medium text-gray-700 mb-2">
+                        Reporta a
+                    </label>
+                    <select id="reports_to" 
+                            name="reports_to"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        <option value="">Sin jefe directo</option>
+                        {% for boss in potential_bosses %}
+                        <option value="{{ boss.id }}" {% if is_edit and position.reports_to and position.reports_to.id == boss.id %}selected{% endif %}>
+                            {{ boss.title }} ({{ boss.department }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Seleccione el puesto al que reporta este puesto</p>
+                </div>
+                
+                <!-- Responsabilidades -->
+                <div class="md:col-span-2">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Descripción del Puesto
+                    </h3>
+                    
+                    <label for="responsibilities" class="block text-sm font-medium text-gray-700 mb-2">
+                        Responsabilidades y Funciones
+                    </label>
+                    <textarea id="responsibilities" 
+                              name="responsibilities" 
+                              rows="6"
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                              placeholder="Describa las principales responsabilidades y funciones del puesto...">{% if is_edit %}{{ position.responsibilities }}{% endif %}</textarea>
+                    <p class="text-xs text-gray-500 mt-1">Describa las principales responsabilidades, funciones y objetivos del puesto</p>
+                </div>
+            </div>
+            
+            <!-- Botones de acción -->
+            <div class="flex items-center justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
+                <a href="{% url 'organizational:position_admin_list' %}" 
+                   class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-2 rounded-lg transition-colors">
+                    Cancelar
+                </a>
+                <button type="submit" 
+                        class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span>{% if is_edit %}Actualizar{% else %}Crear{% endif %} Puesto</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const departmentSelect = document.getElementById('department');
+    const customDepartmentInput = document.getElementById('custom_department');
+    
+    // Permitir escribir departamento personalizado
+    customDepartmentInput.addEventListener('input', function() {
+        if (this.value.trim()) {
+            departmentSelect.value = this.value.trim();
+        }
+    });
+    
+    // Sincronizar select con input personalizado
+    departmentSelect.addEventListener('change', function() {
+        if (this.value && !customDepartmentInput.value) {
+            customDepartmentInput.value = '';
+        }
+    });
+});
+</script>
+{% endblock %}

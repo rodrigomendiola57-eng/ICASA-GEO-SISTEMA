@@ -1,0 +1,82 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Flujogramas - ICASA-GEO{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-project-diagram text-info me-2"></i>Flujogramas</h2>
+                <button class="btn btn-info">
+                    <i class="fas fa-plus me-1"></i>Nuevo Flujograma
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    {% if flows %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Estado</th>
+                                        <th>Puestos Relacionados</th>
+                                        <th>Creado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for flow in flows %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ flow.name }}</strong>
+                                            {% if flow.description %}
+                                                <br><small class="text-muted">{{ flow.description|truncatechars:50 }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if flow.status == 'approved' %}
+                                                <span class="badge bg-success">Aprobado</span>
+                                            {% elif flow.status == 'review' %}
+                                                <span class="badge bg-warning">En Revisión</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Borrador</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark">{{ flow.related_positions.count }} puestos</span>
+                                        </td>
+                                        <td>{{ flow.created_at|date:"d/m/Y" }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-project-diagram fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No hay flujogramas creados</h5>
+                            <p class="text-muted">Crea tu primer flujograma para comenzar</p>
+                            <button class="btn btn-info">
+                                <i class="fas fa-plus me-1"></i>Crear Flujograma
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

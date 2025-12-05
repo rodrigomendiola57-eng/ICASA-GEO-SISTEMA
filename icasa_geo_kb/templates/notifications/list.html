@@ -1,0 +1,205 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Notificaciones - ICASA GEO{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                {% if unread_only %}Notificaciones No Leídas{% else %}Todas las Notificaciones{% endif %}
+            </h1>
+            <p class="text-gray-600">Mantente al día con las actualizaciones del sistema</p>
+        </div>
+        <div class="flex space-x-3">
+            {% if not unread_only %}
+            <a href="{% url 'core:notifications_unread' %}" 
+               class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg">
+                Solo No Leídas
+            </a>
+            {% else %}
+            <a href="{% url 'core:notifications_list' %}" 
+               class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
+                Todas
+            </a>
+            {% endif %}
+            <button onclick="markAllAsRead()" 
+                    class="bg-icasa-primary hover:bg-icasa-dark text-white px-4 py-2 rounded-lg">
+                Marcar Todas como Leídas
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div class="flex flex-wrap gap-2">
+            <button class="filter-btn active" data-filter="all">Todas</button>
+            <button class="filter-btn" data-filter="document_created">Documentos Creados</button>
+            <button class="filter-btn" data-filter="document_approved">Aprobaciones</button>
+            <button class="filter-btn" data-filter="document_review">Revisiones</button>
+            <button class="filter-btn" data-filter="system_update">Sistema</button>
+        </div>
+    </div>
+
+    <!-- Lista de notificaciones -->
+    <div class="space-y-4">
+        {% for notification in notifications %}
+        <div class="notification-item bg-white rounded-lg shadow-sm border border-gray-200 p-4 
+                    {% if not notification.is_read %}border-l-4 border-l-icasa-primary{% endif %}"
+             data-type="{{ notification.notification_type }}"
+             data-id="{{ notification.id }}">
+            
+            <div class="flex items-start justify-between">
+                <div class="flex items-start space-x-4 flex-1">
+                    <!-- Icono según tipo -->
+                    <div class="p-2 rounded-full 
+                        {% if notification.notification_type == 'document_created' %}bg-blue-100
+                        {% elif notification.notification_type == 'document_approved' %}bg-green-100
+                        {% elif notification.notification_type == 'document_rejected' %}bg-red-100
+                        {% elif notification.notification_type == 'document_review' %}bg-yellow-100
+                        {% else %}bg-gray-100{% endif %}">
+                        
+                        {% if notification.notification_type == 'document_created' %}
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        {% elif notification.notification_type == 'document_approved' %}
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        {% elif notification.notification_type == 'document_rejected' %}
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        {% elif notification.notification_type == 'document_review' %}
+                        <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        {% else %}
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Contenido -->
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-2 mb-1">
+                            <h3 class="font-semibold text-gray-900">{{ notification.title }}</h3>
+                            {% if not notification.is_read %}
+                            <span class="w-2 h-2 bg-icasa-primary rounded-full"></span>
+                            {% endif %}
+                            <span class="px-2 py-1 text-xs rounded-full {{ notification.get_priority_class }}">
+                                {{ notification.get_priority_display }}
+                            </span>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-2">{{ notification.message }}</p>
+                        <div class="flex items-center space-x-4 text-xs text-gray-500">
+                            <span>{{ notification.created_at|timesince }} atrás</span>
+                            {% if notification.sender %}
+                            <span>•</span>
+                            <span>Por {{ notification.sender.get_full_name|default:notification.sender.username }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Acciones -->
+                <div class="flex items-center space-x-2 ml-4">
+                    {% if notification.action_url %}
+                    <a href="{{ notification.action_url }}" 
+                       class="bg-icasa-primary hover:bg-icasa-dark text-white px-3 py-1 rounded text-sm"
+                       onclick="markAsRead({{ notification.id }})">
+                        Ver
+                    </a>
+                    {% endif %}
+                    {% if not notification.is_read %}
+                    <button onclick="markAsRead({{ notification.id }})" 
+                            class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
+            <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4 19h6v-6H4v6zM16 3H4v10h12V3z"></path>
+            </svg>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No hay notificaciones</h3>
+            <p class="text-gray-500">Cuando tengas nuevas notificaciones aparecerán aquí.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.filter-btn {
+    @apply px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors;
+}
+.filter-btn.active {
+    @apply bg-icasa-primary text-white border-icasa-primary;
+}
+</style>
+
+<script>
+// Filtros
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        // Actualizar botones activos
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Filtrar notificaciones
+        const filter = this.dataset.filter;
+        document.querySelectorAll('.notification-item').forEach(item => {
+            if (filter === 'all' || item.dataset.type === filter) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    });
+});
+
+// Marcar como leída
+function markAsRead(notificationId) {
+    fetch(`/core/notifications/${notificationId}/read/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+
+// Marcar todas como leídas
+function markAllAsRead() {
+    fetch('/core/notifications/mark-all-read/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+</script>
+
+{% csrf_token %}
+{% endblock %}

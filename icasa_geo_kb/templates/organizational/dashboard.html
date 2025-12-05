@@ -1,0 +1,613 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Organigramas - ICASA GEO{% endblock %}
+
+{% block content %}
+<div class="h-screen flex flex-col">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 p-6 flex-shrink-0">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">
+                    <i class="fas fa-sitemap text-blue-600 mr-3"></i>
+                    Organigramas ICASA
+                </h1>
+                <p class="text-gray-600 mt-1">Gestión y visualización de la estructura organizacional</p>
+            </div>
+            
+            <!-- Acciones Principales -->
+            <div class="flex items-center space-x-3">
+                {% if can_create %}
+                    <button onclick="showCreateModal()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Crear Organigrama
+                    </button>
+                    <button onclick="showUploadModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-upload mr-2"></i>Subir Archivo
+                    </button>
+                {% endif %}
+                
+                <a href="{% url 'organizational:position_admin_list' %}" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                    <i class="fas fa-users mr-2"></i>Gestionar Posiciones
+                </a>
+            </div>
+        </div>
+        
+        <!-- Estadísticas -->
+        <div class="mt-6 grid grid-cols-4 gap-4">
+            <div class="bg-blue-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-blue-600">{{ total_charts }}</div>
+                <div class="text-sm text-blue-800">Total Organigramas</div>
+            </div>
+            <div class="bg-green-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-green-600">{{ active_charts }}</div>
+                <div class="text-sm text-green-800">Activos</div>
+            </div>
+            <div class="bg-purple-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-purple-600">{{ departments_with_charts }}</div>
+                <div class="text-sm text-purple-800">Departamentos</div>
+            </div>
+            <div class="bg-yellow-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-yellow-600">{{ charts|length|add:"-1"|add:active_charts }}</div>
+                <div class="text-sm text-yellow-800">En Desarrollo</div>
+            </div>
+        </div>
+        
+        <!-- Filtros -->
+        <div class="mt-4 flex items-center space-x-4">
+            <label class="text-sm font-medium text-gray-700">Filtrar por:</label>
+            <select id="departmentFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm" onchange="filterByDepartment()">
+                <option value="">Todos los departamentos</option>
+                {% for dept in available_departments %}
+                    <option value="{{ dept }}">{{ dept }}</option>
+                {% endfor %}
+            </select>
+            
+            <select id="typeFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm" onchange="filterByType()">
+                <option value="">Todos los tipos</option>
+                <option value="system">Creados en Sistema</option>
+                <option value="external">Archivos Subidos</option>
+            </select>
+            
+            <input type="text" id="searchInput" placeholder="Buscar organigrama..." 
+                   class="px-3 py-2 border border-gray-300 rounded-lg text-sm w-64"
+                   onkeyup="searchCharts()">
+        </div>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="flex-1 overflow-auto bg-gray-50 p-6">
+        {% if charts %}
+            <!-- Grid de Organigramas -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="chartsGrid">
+                {% for chart in charts %}
+                    <div class="chart-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" 
+                         data-department="{{ chart.department }}" 
+                         data-type="{% if chart.is_external %}external{% else %}system{% endif %}"
+                         onclick="openChart({{ chart.id }})">
+                        
+                        <!-- Header del Card -->
+                        <div class="h-32 bg-gradient-to-br 
+                            {% if chart.department == 'Administrativo' %}from-blue-500 to-blue-600
+                            {% elif chart.department == 'Comercial' %}from-green-500 to-green-600
+                            {% elif chart.department == 'Operaciones' %}from-purple-500 to-purple-600
+                            {% elif chart.department == 'RRHH' %}from-pink-500 to-pink-600
+                            {% elif chart.department == 'Finanzas' %}from-yellow-500 to-yellow-600
+                            {% elif chart.department == 'Mantenimiento' %}from-red-500 to-red-600
+                            {% elif chart.department == 'Dirección' %}from-indigo-500 to-indigo-600
+                            {% else %}from-gray-500 to-gray-600{% endif %}
+                            flex items-center justify-center relative">
+                            
+                            <!-- Icono del tipo de archivo -->
+                            <div class="text-center text-white">
+                                {% if chart.is_external %}
+                                    <i class="fas fa-file-alt text-4xl mb-2"></i>
+                                {% else %}
+                                    <i class="fas fa-sitemap text-4xl mb-2"></i>
+                                {% endif %}
+                                <h3 class="text-lg font-semibold">{{ chart.department }}</h3>
+                            </div>
+                            
+                            <!-- Badge de tipo -->
+                            <div class="absolute top-2 right-2">
+                                <span class="px-2 py-1 text-xs rounded-full
+                                    {% if chart.is_external %}bg-blue-100 text-blue-800
+                                    {% else %}bg-green-100 text-green-800{% endif %}">
+                                    {% if chart.is_external %}Archivo{% else %}Sistema{% endif %}
+                                </span>
+                            </div>
+                            
+                            <!-- Menú de 3 puntos -->
+                            <div class="absolute top-2 left-2 z-20">
+                                <div class="relative">
+                                    <button onclick="toggleMenu({{ chart.id }}); event.stopPropagation();" 
+                                            class="bg-black bg-opacity-30 text-white hover:bg-opacity-50 rounded-full p-2 transition-colors">
+                                        <i class="fas fa-ellipsis-v text-lg"></i>
+                                    </button>
+                                    <div id="menu-{{ chart.id }}" class="absolute left-0 top-12 bg-white rounded-lg shadow-xl border py-2 min-w-48 z-50 hidden">
+                                        <button onclick="openChart({{ chart.id }}); event.stopPropagation();" 
+                                                class="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700 text-sm flex items-center">
+                                            <i class="fas fa-folder-open mr-2 text-blue-500"></i>Editar Depto
+                                        </button>
+                                        <button onclick="deleteDepartment({{ chart.id }}); event.stopPropagation();" 
+                                                class="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600 text-sm flex items-center">
+                                            <i class="fas fa-trash mr-2"></i>Eliminar Depto
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Contenido del Card -->
+                        <div class="p-4">
+                            <h4 class="font-semibold text-gray-900 mb-2 truncate">{{ chart.name }}</h4>
+                            
+                            {% if chart.description %}
+                                <p class="text-sm text-gray-600 mb-3 line-clamp-2">{{ chart.description }}</p>
+                            {% endif %}
+                            
+                            <!-- Metadatos -->
+                            <div class="space-y-1 text-xs text-gray-500">
+                                <div class="flex items-center justify-between">
+                                    <span>Tipo:</span>
+                                    <span>{% if chart.is_external %}Archivo{% else %}Sistema{% endif %}</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span>Actualizado:</span>
+                                    <span>{{ chart.updated_at|date:"d/m/Y" }}</span>
+                                </div>
+                                {% if chart.created_by %}
+                                <div class="flex items-center justify-between">
+                                    <span>Por:</span>
+                                    <span>{{ chart.created_by.get_full_name|default:chart.created_by.username }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Acciones -->
+                            <div class="mt-3 flex items-center justify-between">
+                                <div class="flex items-center space-x-2">
+                                    {% if chart.is_external and chart.chart_file %}
+                                        <button onclick="downloadFile({{ chart.id }}); event.stopPropagation();" 
+                                                class="text-blue-600 hover:text-blue-800" title="Descargar">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                                
+                                <button onclick="viewHistory({{ chart.id }}); event.stopPropagation();" 
+                                        class="text-purple-600 hover:text-purple-800 text-xs" title="Ver historial">
+                                    <i class="fas fa-history mr-1"></i>Historial
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+                
+                <!-- Card para crear nuevo -->
+                {% if can_create %}
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer border-2 border-dashed border-gray-300" 
+                         onclick="showCreateModal()">
+                        <div class="h-32 bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center">
+                            <div class="text-center text-white">
+                                <i class="fas fa-plus text-4xl mb-2"></i>
+                                <h3 class="text-lg font-semibold">Crear Nuevo</h3>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <h4 class="font-semibold text-gray-900 mb-2">Nuevo Organigrama</h4>
+                            <p class="text-sm text-gray-600">Crear un organigrama desde cero o subir archivo</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <!-- Estado vacío -->
+            <div class="text-center py-12">
+                <i class="fas fa-sitemap text-6xl text-gray-300 mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">No hay organigramas</h3>
+                <p class="text-gray-600 mb-6">Comienza creando tu primer organigrama organizacional</p>
+                {% if can_create %}
+                    <button onclick="showCreateModal()" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Crear Primer Organigrama
+                    </button>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal Crear Organigrama -->
+<div id="createModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Crear Organigrama</h3>
+                    <button onclick="hideCreateModal()" class="text-gray-400 hover:text-red-500">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <form onsubmit="createChart(event)">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+                        <input type="text" id="chartName" class="w-full px-3 py-2 border border-gray-300 rounded-lg" 
+                               placeholder="Ej: Organigrama Administrativo 2024" required>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Departamento</label>
+                        <select id="chartDepartment" class="w-full px-3 py-2 border border-gray-300 rounded-lg" required>
+                            <option value="">Seleccionar departamento</option>
+                            {% for dept in available_departments %}
+                                <option value="{{ dept }}">{{ dept }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                        <textarea id="chartDescription" class="w-full px-3 py-2 border border-gray-300 rounded-lg" 
+                                  rows="3" placeholder="Descripción del organigrama..."></textarea>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button type="button" onclick="hideCreateModal()" 
+                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                            Cancelar
+                        </button>
+                        <button type="submit" 
+                                class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                            Crear
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Subir Archivo -->
+<div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Subir Organigrama</h3>
+                    <button onclick="hideUploadModal()" class="text-gray-400 hover:text-red-500">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <form onsubmit="uploadChart(event)">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Archivo</label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                            <input type="file" id="chartFile" accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.vsd,.vsdx" 
+                                   class="hidden" onchange="handleFileSelect(event)">
+                            <button type="button" onclick="document.getElementById('chartFile').click()" 
+                                    class="text-blue-600 hover:text-blue-700">
+                                <i class="fas fa-cloud-upload-alt text-3xl mb-2"></i>
+                                <p class="text-sm">Click para seleccionar archivo</p>
+                                <p class="text-xs text-gray-500">PDF, PNG, JPG, DOCX, XLSX, Visio</p>
+                            </button>
+                            <div id="fileInfo" class="hidden mt-2 text-sm text-gray-600"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Departamento</label>
+                        <select id="uploadDepartment" class="w-full px-3 py-2 border border-gray-300 rounded-lg" required>
+                            <option value="">Seleccionar departamento</option>
+                            {% for dept in available_departments %}
+                                <option value="{{ dept }}">{{ dept }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button type="button" onclick="hideUploadModal()" 
+                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                            Cancelar
+                        </button>
+                        <button type="submit" 
+                                class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            Subir
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Funciones de modal
+function showCreateModal() {
+    document.getElementById('createModal').classList.remove('hidden');
+}
+
+function hideCreateModal() {
+    document.getElementById('createModal').classList.add('hidden');
+    document.getElementById('chartName').value = '';
+    document.getElementById('chartDepartment').value = '';
+    document.getElementById('chartDescription').value = '';
+}
+
+function showUploadModal() {
+    document.getElementById('uploadModal').classList.remove('hidden');
+}
+
+function hideUploadModal() {
+    document.getElementById('uploadModal').classList.add('hidden');
+    document.getElementById('chartFile').value = '';
+    document.getElementById('uploadDepartment').value = '';
+    document.getElementById('fileInfo').classList.add('hidden');
+}
+
+// Crear organigrama
+function createChart(event) {
+    event.preventDefault();
+    
+    const formData = new FormData();
+    formData.append('name', document.getElementById('chartName').value);
+    formData.append('department', document.getElementById('chartDepartment').value);
+    formData.append('description', document.getElementById('chartDescription').value);
+    
+    // Mostrar indicador de carga
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Creando...';
+    submitBtn.disabled = true;
+    
+    fetch('/organizational/api/departmental/create/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            hideCreateModal();
+            if (data.redirect_url) {
+                window.location.href = data.redirect_url;
+            } else {
+                location.reload();
+            }
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al crear organigrama');
+    })
+    .finally(() => {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+// Subir archivo
+function uploadChart(event) {
+    event.preventDefault();
+    
+    const file = document.getElementById('chartFile').files[0];
+    const department = document.getElementById('uploadDepartment').value;
+    
+    if (!file) {
+        alert('Por favor selecciona un archivo');
+        return;
+    }
+    
+    if (!department) {
+        alert('Por favor selecciona un departamento');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('chart_file', file);
+    formData.append('department', department);
+    
+    // Mostrar indicador de carga
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Subiendo...';
+    submitBtn.disabled = true;
+    
+    fetch('/organizational/api/departmental/upload/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            hideUploadModal();
+            if (data.redirect_url) {
+                window.location.href = data.redirect_url;
+            } else {
+                location.reload();
+            }
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al subir archivo');
+    })
+    .finally(() => {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+// Funciones de interacción
+function openChart(chartId) {
+    // Si es un organigrama del sistema, mostrar vista con posiciones
+    window.location.href = `/organizational/departamental/${chartId}/`;
+}
+
+function editChart(chartId) {
+    window.location.href = `/organizational/departamental/${chartId}/edit/`;
+}
+
+function downloadFile(chartId) {
+    window.location.href = `/organizational/api/departmental/${chartId}/download/`;
+}
+
+function viewHistory(chartId) {
+    window.location.href = `/organizational/departamental/${chartId}/history/`;
+}
+
+// Filtros
+function filterByDepartment() {
+    const department = document.getElementById('departmentFilter').value;
+    filterCharts();
+}
+
+function filterByType() {
+    const type = document.getElementById('typeFilter').value;
+    filterCharts();
+}
+
+function searchCharts() {
+    filterCharts();
+}
+
+function filterCharts() {
+    const department = document.getElementById('departmentFilter').value;
+    const type = document.getElementById('typeFilter').value;
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    
+    const cards = document.querySelectorAll('.chart-card');
+    let visibleCount = 0;
+    
+    cards.forEach(card => {
+        const cardDept = card.getAttribute('data-department');
+        const cardType = card.getAttribute('data-type');
+        const cardText = card.textContent.toLowerCase();
+        
+        const matchesDept = !department || cardDept === department;
+        const matchesType = !type || cardType === type;
+        const matchesSearch = !search || cardText.includes(search);
+        
+        if (matchesDept && matchesType && matchesSearch) {
+            card.style.display = 'block';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+    
+    // Mostrar mensaje si no hay resultados
+    const noResults = document.getElementById('noResults');
+    if (visibleCount === 0 && (department || type || search)) {
+        if (!noResults) {
+            const message = document.createElement('div');
+            message.id = 'noResults';
+            message.className = 'col-span-full text-center py-8';
+            message.innerHTML = `
+                <i class="fas fa-search text-4xl text-gray-300 mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No se encontraron resultados</h3>
+                <p class="text-gray-600">Intenta con otros filtros o términos de búsqueda</p>
+            `;
+            document.getElementById('chartsGrid').appendChild(message);
+        }
+    } else if (noResults) {
+        noResults.remove();
+    }
+}
+
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    const fileInfo = document.getElementById('fileInfo');
+    
+    if (file) {
+        fileInfo.textContent = `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+        fileInfo.classList.remove('hidden');
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Función para mostrar/ocultar menú de 3 puntos
+function toggleMenu(chartId) {
+    const menu = document.getElementById(`menu-${chartId}`);
+    const allMenus = document.querySelectorAll('[id^="menu-"]');
+    
+    // Cerrar todos los otros menús
+    allMenus.forEach(m => {
+        if (m.id !== `menu-${chartId}`) {
+            m.classList.add('hidden');
+        }
+    });
+    
+    // Toggle del menú actual
+    menu.classList.toggle('hidden');
+}
+
+// Función para eliminar departamento (solo administradores)
+function deleteDepartment(chartId) {
+    if (confirm('⚠️ ¿Estás seguro de eliminar este departamento?\n\nEsta acción eliminará TODAS las versiones y archivos del departamento.\n\nEsta acción NO se puede deshacer.')) {
+        fetch(`/organizational/api/departmental/${chartId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Departamento eliminado exitosamente');
+                location.reload();
+            } else {
+                alert('❌ Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Error al eliminar departamento');
+        });
+    }
+}
+
+// Cerrar menús al hacer click fuera
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('[id^="menu-"]') && !e.target.closest('button')) {
+        const allMenus = document.querySelectorAll('[id^="menu-"]');
+        allMenus.forEach(menu => menu.classList.add('hidden'));
+    }
+});
+
+// Cerrar modales con Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideCreateModal();
+        hideUploadModal();
+        // Cerrar todos los menús
+        const allMenus = document.querySelectorAll('[id^="menu-"]');
+        allMenus.forEach(menu => menu.classList.add('hidden'));
+    }
+});
+</script>
+{% endblock %}

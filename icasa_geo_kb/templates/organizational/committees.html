@@ -1,0 +1,209 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}🤝 Comités y Grupos - ICASA-GEO{% endblock %}
+{% block page_title %}🤝 Comités y Grupos - Estructura "Invisible"{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-6 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold mb-2">🤝 Comités y Grupos</h1>
+                <p class="text-orange-100">Gestión de la estructura organizacional invisible</p>
+            </div>
+            <div class="text-right">
+                <p class="text-3xl font-bold">{{ committees.count }}</p>
+                <p class="text-orange-100">Comités activos</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tipos de comités -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div class="bg-white rounded-lg p-4 text-center border border-gray-200">
+            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <span class="text-2xl">🏆</span>
+            </div>
+            <p class="text-sm font-medium text-gray-900">Calidad</p>
+            <p class="text-xs text-gray-600">2 comités</p>
+        </div>
+        
+        <div class="bg-white rounded-lg p-4 text-center border border-gray-200">
+            <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <span class="text-2xl">🛡️</span>
+            </div>
+            <p class="text-sm font-medium text-gray-900">Seguridad</p>
+            <p class="text-xs text-gray-600">1 comité</p>
+        </div>
+        
+        <div class="bg-white rounded-lg p-4 text-center border border-gray-200">
+            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <span class="text-2xl">⚖️</span>
+            </div>
+            <p class="text-sm font-medium text-gray-900">Ética</p>
+            <p class="text-xs text-gray-600">1 comité</p>
+        </div>
+        
+        <div class="bg-white rounded-lg p-4 text-center border border-gray-200">
+            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <span class="text-2xl">🚨</span>
+            </div>
+            <p class="text-sm font-medium text-gray-900">Emergencias</p>
+            <p class="text-xs text-gray-600">1 brigada</p>
+        </div>
+        
+        <div class="bg-white rounded-lg p-4 text-center border border-gray-200">
+            <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <span class="text-2xl">📈</span>
+            </div>
+            <p class="text-sm font-medium text-gray-900">Mejora</p>
+            <p class="text-xs text-gray-600">1 comité</p>
+        </div>
+        
+        <div class="bg-white rounded-lg p-4 text-center border border-gray-200">
+            <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <span class="text-2xl">➕</span>
+            </div>
+            <p class="text-sm font-medium text-gray-900">Otros</p>
+            <p class="text-xs text-gray-600">0 grupos</p>
+        </div>
+    </div>
+
+    <!-- Lista de comités -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-gray-900">📋 Comités Activos</h3>
+            <button class="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors">
+                ➕ Nuevo Comité
+            </button>
+        </div>
+
+        <div class="space-y-4">
+            {% for committee in committees %}
+            <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 {% if committee.type == 'quality' %}bg-blue-100{% elif committee.type == 'safety' %}bg-red-100{% elif committee.type == 'ethics' %}bg-purple-100{% elif committee.type == 'emergency' %}bg-green-100{% else %}bg-yellow-100{% endif %} rounded-lg flex items-center justify-center">
+                            {% if committee.type == 'quality' %}
+                                <span class="text-2xl">🏆</span>
+                            {% elif committee.type == 'safety' %}
+                                <span class="text-2xl">🛡️</span>
+                            {% elif committee.type == 'ethics' %}
+                                <span class="text-2xl">⚖️</span>
+                            {% elif committee.type == 'emergency' %}
+                                <span class="text-2xl">🚨</span>
+                            {% else %}
+                                <span class="text-2xl">📈</span>
+                            {% endif %}
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="text-lg font-semibold text-gray-900">{{ committee.name }}</h4>
+                            <p class="text-sm text-gray-600">{{ committee.get_type_display }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <div class="text-right">
+                            <p class="text-sm font-medium text-gray-900">{{ committee.members.count }} miembros</p>
+                            <p class="text-xs text-gray-600">{{ committee.meeting_frequency }}</p>
+                        </div>
+                        <a href="{% url 'organizational:committee_detail' committee.id %}" 
+                           class="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-orange-600 transition-colors">
+                            Ver Detalle
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Propósito -->
+                <div class="mb-4">
+                    <p class="text-sm text-gray-700">{{ committee.purpose|truncatechars:200 }}</p>
+                </div>
+
+                <!-- Miembros destacados -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <span class="text-sm text-gray-600 mr-3">Miembros:</span>
+                        <div class="flex -space-x-2">
+                            {% for member in committee.members.all|slice:":5" %}
+                            {% if member.photo %}
+                                <img src="{{ member.photo.url }}" alt="{{ member.first_name }}" 
+                                     class="w-8 h-8 rounded-full border-2 border-white"
+                                     title="{{ member.first_name }} {{ member.last_name }}">
+                            {% else %}
+                                <div class="w-8 h-8 bg-gray-300 rounded-full border-2 border-white flex items-center justify-center"
+                                     title="{{ member.first_name }} {{ member.last_name }}">
+                                    <span class="text-xs font-medium text-gray-600">{{ member.first_name.0 }}{{ member.last_name.0 }}</span>
+                                </div>
+                            {% endif %}
+                            {% endfor %}
+                            {% if committee.members.count > 5 %}
+                                <div class="w-8 h-8 bg-gray-100 rounded-full border-2 border-white flex items-center justify-center">
+                                    <span class="text-xs font-medium text-gray-600">+{{ committee.members.count|add:"-5" }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-2">
+                        {% if committee.responsibilities %}
+                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                                {{ committee.responsibilities|length }} responsabilidades
+                            </span>
+                        {% endif %}
+                        <span class="{% if committee.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %} text-xs px-2 py-1 rounded-full">
+                            {% if committee.is_active %}Activo{% else %}Inactivo{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-12">
+                <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No hay comités registrados</h3>
+                <p class="text-gray-600">Comienza creando comités y grupos de trabajo.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Acciones rápidas -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">🚀 Acciones Rápidas</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg class="w-8 h-8 text-orange-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                <div class="text-left">
+                    <p class="font-medium text-gray-900">Crear Comité</p>
+                    <p class="text-sm text-gray-600">Nuevo comité o grupo</p>
+                </div>
+            </button>
+
+            <button class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg class="w-8 h-8 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+                <div class="text-left">
+                    <p class="font-medium text-gray-900">Reporte</p>
+                    <p class="text-sm text-gray-600">Análisis de participación</p>
+                </div>
+            </button>
+
+            <button class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg class="w-8 h-8 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <div class="text-left">
+                    <p class="font-medium text-gray-900">Calendario</p>
+                    <p class="text-sm text-gray-600">Próximas reuniones</p>
+                </div>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

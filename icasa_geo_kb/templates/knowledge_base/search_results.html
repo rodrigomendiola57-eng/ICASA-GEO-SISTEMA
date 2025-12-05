@@ -1,0 +1,127 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Resultados de Búsqueda - ICASA GEO{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Header de búsqueda -->
+    <div class="mb-6">
+        <nav class="mb-4">
+            <ol class="flex items-center space-x-2 text-sm text-gray-500">
+                <li><a href="{% url 'knowledge_base:home' %}" class="hover:text-icasa-primary">Base de Conocimiento</a></li>
+                <li><span class="mx-2">/</span></li>
+                <li class="text-gray-900">Resultados de búsqueda</li>
+            </ol>
+        </nav>
+        
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Resultados de Búsqueda</h1>
+        {% if query %}
+        <p class="text-gray-600">
+            Mostrando {{ total_results }} resultado{{ total_results|pluralize }} para "<strong>{{ query }}</strong>"
+        </p>
+        {% endif %}
+    </div>
+
+    <!-- Nueva búsqueda -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+        <form method="get" action="{% url 'knowledge_base:search' %}">
+            <div class="flex">
+                <input type="text" name="q" value="{{ query }}" 
+                       placeholder="Buscar documentos, políticas, procedimientos..."
+                       class="flex-1 px-4 py-3 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-icasa-primary focus:border-transparent">
+                <button type="submit" 
+                        class="bg-icasa-primary hover:bg-icasa-dark text-white px-6 py-3 rounded-r-lg">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {% if query %}
+    <div class="space-y-6">
+        <!-- Categorías encontradas -->
+        {% if categories %}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Categorías ({{ categories|length }})</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for category in categories %}
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <a href="{% url 'knowledge_base:category_detail' category.slug %}" class="block">
+                        <h3 class="font-semibold text-gray-900 mb-2">{{ category.name }}</h3>
+                        <p class="text-gray-600 text-sm">{{ category.description|truncatewords:15 }}</p>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Documentos encontrados -->
+        {% if documents %}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Documentos ({{ documents|length }})</h2>
+            <div class="space-y-4">
+                {% for document in documents %}
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <a href="{% url 'knowledge_base:document_detail' document.slug %}" class="block">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-gray-900 mb-2">{{ document.title }}</h3>
+                                <p class="text-gray-600 text-sm mb-3">{{ document.content|striptags|truncatewords:25 }}</p>
+                                <div class="flex items-center space-x-4 text-xs text-gray-500">
+                                    <span>{{ document.category.name }}</span>
+                                    <span>•</span>
+                                    <span>{{ document.document_code }}</span>
+                                    <span>•</span>
+                                    <span>{{ document.updated_at|date:"d/m/Y" }}</span>
+                                    {% if document.tags.all %}
+                                    <span>•</span>
+                                    <span>{{ document.tags.all|slice:":3"|join:", " }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <span class="px-2 py-1 rounded-full text-xs
+                                    {% if document.status == 'approved' %}bg-green-100 text-green-800
+                                    {% elif document.status == 'review' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ document.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Sin resultados -->
+        {% if not documents and not categories %}
+        <div class="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
+            <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No se encontraron resultados</h3>
+            <p class="text-gray-500 mb-4">Intenta con otros términos de búsqueda o explora las categorías.</p>
+            <a href="{% url 'knowledge_base:home' %}" 
+               class="bg-icasa-primary hover:bg-icasa-dark text-white px-4 py-2 rounded-lg inline-flex items-center">
+                Explorar Base de Conocimiento
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <!-- Estado inicial sin búsqueda -->
+    <div class="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
+        <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Buscar en la Base de Conocimiento</h3>
+        <p class="text-gray-500">Ingresa términos de búsqueda para encontrar documentos, políticas y procedimientos.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

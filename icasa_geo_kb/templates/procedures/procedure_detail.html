@@ -1,0 +1,272 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}{{ procedure.title }} - ICASA GEO{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <a href="{% url 'procedures:procedure_list' %}" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">{{ procedure.title }}</h1>
+                    <p class="text-sm text-gray-500">Código: {{ procedure.code }} | Versión: {{ procedure.version }}</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                {% if procedure.owner == user or user.is_staff %}
+                <a href="{% url 'procedures:procedure_edit' procedure.pk %}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-edit mr-2"></i>Editar
+                </a>
+                {% endif %}
+                <button onclick="window.print()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-print mr-2"></i>Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-6">
+        <div class="max-w-4xl mx-auto space-y-6">
+            <!-- Información General -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900">Información General</h3>
+                    <div class="flex items-center space-x-4">
+                        <span class="px-3 py-1 text-sm font-medium rounded-full 
+                            {% if procedure.status == 'published' %}bg-green-100 text-green-800
+                            {% elif procedure.status == 'approved' %}bg-blue-100 text-blue-800
+                            {% elif procedure.status == 'review' %}bg-yellow-100 text-yellow-800
+                            {% elif procedure.status == 'draft' %}bg-gray-100 text-gray-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ procedure.get_status_display }}
+                        </span>
+                        <span class="px-3 py-1 text-sm font-medium rounded-full 
+                            {% if procedure.criticality == 'critical' %}bg-red-100 text-red-800
+                            {% elif procedure.criticality == 'high' %}bg-orange-100 text-orange-800
+                            {% elif procedure.criticality == 'medium' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ procedure.get_criticality_display }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 mb-1">Categoría</h4>
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 rounded-full mr-2" style="background-color: {{ procedure.category.color }}"></div>
+                            <span class="text-gray-900">{{ procedure.category.name }}</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 mb-1">Departamento</h4>
+                        <p class="text-gray-900">{{ procedure.department }}</p>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 mb-1">Frecuencia</h4>
+                        <p class="text-gray-900">{{ procedure.get_frequency_display }}</p>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 mb-1">Puesto Responsable</h4>
+                        <p class="text-gray-900">{{ procedure.responsible_position|default:"No especificado" }}</p>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 mb-1">Propietario</h4>
+                        <p class="text-gray-900">{{ procedure.owner.get_full_name|default:procedure.owner.username }}</p>
+                    </div>
+                    
+                    {% if procedure.estimated_duration %}
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 mb-1">Duración Estimada</h4>
+                        <p class="text-gray-900">{{ procedure.estimated_duration }} minutos</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Fechas Importantes -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Control de Versiones</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 mb-1">Fecha de Creación</h4>
+                        <p class="text-gray-900">{{ procedure.created_at|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 mb-1">Última Actualización</h4>
+                        <p class="text-gray-900">{{ procedure.updated_at|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    
+                    {% if procedure.effective_date %}
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 mb-1">Fecha de Vigencia</h4>
+                        <p class="text-gray-900">{{ procedure.effective_date|date:"d/m/Y" }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if procedure.review_date %}
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 mb-1">Próxima Revisión</h4>
+                        <p class="text-gray-900">{{ procedure.review_date|date:"d/m/Y" }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if procedure.expiry_date %}
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 mb-1">Fecha de Vencimiento</h4>
+                        <p class="text-gray-900 {% if procedure.is_expired %}text-red-600 font-semibold{% endif %}">
+                            {{ procedure.expiry_date|date:"d/m/Y" }}
+                            {% if procedure.is_expired %}
+                                <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded ml-2">VENCIDO</span>
+                            {% elif procedure.days_to_expiry <= 30 %}
+                                <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded ml-2">
+                                    Vence en {{ procedure.days_to_expiry }} días
+                                </span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Contenido del Procedimiento -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">Contenido del Procedimiento</h3>
+                
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="text-base font-semibold text-gray-900 mb-3">Objetivo</h4>
+                        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
+                            <p class="text-gray-700 leading-relaxed">{{ procedure.objective }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if procedure.scope %}
+                    <div>
+                        <h4 class="text-base font-semibold text-gray-900 mb-3">Alcance</h4>
+                        <div class="bg-green-50 border-l-4 border-green-400 p-4 rounded-r-lg">
+                            <p class="text-gray-700 leading-relaxed">{{ procedure.scope }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if procedure.content %}
+                    <div>
+                        <h4 class="text-base font-semibold text-gray-900 mb-3">Desarrollo del Procedimiento</h4>
+                        <div class="bg-gray-50 border border-gray-200 p-6 rounded-lg">
+                            <div class="prose max-w-none">
+                                {{ procedure.content|linebreaks }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Pasos del Procedimiento -->
+            {% if steps %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">Pasos del Procedimiento</h3>
+                
+                <div class="space-y-4">
+                    {% for step in steps %}
+                    <div class="flex items-start space-x-4 p-4 {% if step.is_critical %}bg-red-50 border border-red-200{% else %}bg-gray-50 border border-gray-200{% endif %} rounded-lg">
+                        <div class="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold text-sm">
+                            {{ step.step_number }}
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="font-semibold text-gray-900">{{ step.title }}</h4>
+                                <div class="flex items-center space-x-2">
+                                    {% if step.is_critical %}
+                                    <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded font-medium">CRÍTICO</span>
+                                    {% endif %}
+                                    {% if step.estimated_time %}
+                                    <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">{{ step.estimated_time }} min</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <p class="text-gray-700 mb-2">{{ step.description }}</p>
+                            <p class="text-sm text-gray-500">
+                                <i class="fas fa-user mr-1"></i>Responsable: {{ step.responsible }}
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Archivos Adjuntos -->
+            {% if attachments %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">Archivos Adjuntos</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% for attachment in attachments %}
+                    <div class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                        <div class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                            <i class="fas fa-file text-blue-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-900">{{ attachment.name }}</h4>
+                            <p class="text-sm text-gray-500">{{ attachment.file_type|upper }}</p>
+                            {% if attachment.description %}
+                            <p class="text-xs text-gray-400 mt-1">{{ attachment.description }}</p>
+                            {% endif %}
+                        </div>
+                        <a href="{{ attachment.file.url }}" target="_blank" class="text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Etiquetas -->
+            {% if procedure.tags %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Etiquetas</h3>
+                <div class="flex flex-wrap gap-2">
+                    {% for tag in procedure.tags|split:"," %}
+                    <span class="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full">{{ tag|trim }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .bg-gray-50 {
+        background-color: white !important;
+    }
+    
+    .shadow-sm {
+        box-shadow: none !important;
+    }
+    
+    .border {
+        border: 1px solid #e5e7eb !important;
+    }
+}
+</style>
+{% endblock %}

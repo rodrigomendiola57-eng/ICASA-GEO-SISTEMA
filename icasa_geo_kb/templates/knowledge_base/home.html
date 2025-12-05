@@ -1,0 +1,106 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Base de Conocimiento - ICASA GEO{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Header mejorado -->
+    <div class="bg-gradient-to-r from-icasa-primary to-icasa-dark rounded-xl p-8 mb-8 text-white">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-4xl font-bold mb-2">Base de Conocimiento</h1>
+                <p class="text-icasa-light text-lg">Centro de documentación organizacional de ICASA</p>
+                <p class="text-white text-opacity-90 mt-2">Accede a políticas, procedimientos y manuales actualizados</p>
+            </div>
+            <div class="hidden md:block">
+                <svg class="w-24 h-24 text-white text-opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barra de búsqueda y acciones -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+            <div class="flex-1 max-w-lg">
+                <form method="get" action="{% url 'knowledge_base:search' %}">
+                    <div class="relative">
+                        <input type="text" name="q" placeholder="Buscar documentos, políticas, procedimientos..." 
+                               class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-icasa-primary focus:border-transparent">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="flex space-x-3">
+                <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg inline-flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                    </svg>
+                    Filtros
+                </button>
+                {% if perms.knowledge_base.add_document %}
+                <a href="{% url 'knowledge_base:document_create' %}" 
+                   class="bg-icasa-primary hover:bg-icasa-dark text-white px-4 py-2 rounded-lg inline-flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Nuevo Documento
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Categorías principales -->
+        <div class="lg:col-span-2">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Categorías</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for category in categories %}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
+                    <a href="{% url 'knowledge_base:category_detail' category.slug %}" class="block">
+                        <h3 class="font-semibold text-gray-900 mb-2">{{ category.name }}</h3>
+                        <p class="text-gray-600 text-sm mb-3">{{ category.description|truncatewords:15 }}</p>
+                        <div class="flex items-center text-sm text-gray-500">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Documentos disponibles
+                        </div>
+                    </a>
+                </div>
+                {% empty %}
+                <div class="col-span-2 text-center py-8 text-gray-500">
+                    No hay categorías disponibles
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Documentos recientes -->
+        <div>
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Documentos Recientes</h2>
+            <div class="space-y-3">
+                {% for document in recent_documents %}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                    <a href="{% url 'knowledge_base:document_detail' document.slug %}" class="block">
+                        <h4 class="font-medium text-gray-900 mb-1">{{ document.title|truncatewords:8 }}</h4>
+                        <p class="text-sm text-gray-600 mb-2">{{ document.category.name }}</p>
+                        <p class="text-xs text-gray-500">{{ document.updated_at|date:"d/m/Y" }}</p>
+                    </a>
+                </div>
+                {% empty %}
+                <div class="text-center py-4 text-gray-500">
+                    No hay documentos recientes
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

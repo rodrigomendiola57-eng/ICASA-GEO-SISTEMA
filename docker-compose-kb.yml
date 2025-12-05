@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  web:
+    image: python:3.11-slim
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./icasa_geo_kb:/app
+    working_dir: /app
+    command: >
+      sh -c "pip install Django==4.2.7 djangorestframework==3.14.0 django-mptt==0.14.0 django-taggit==4.0.0 python-decouple==3.8 &&
+             python manage.py makemigrations core &&
+             python manage.py makemigrations knowledge_base &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=icasa_geo.settings

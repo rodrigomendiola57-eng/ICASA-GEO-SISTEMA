@@ -1,0 +1,69 @@
+graph TD
+    classDef inicio fill:#2ecc71,stroke:#27ae60,stroke-width:2px,color:white;
+    classDef proceso fill:#3498db,stroke:#2980b9,stroke-width:2px,color:white;
+    classDef documento fill:#f1c40f,stroke:#f39c12,stroke-width:2px,color:black;
+    classDef decision fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:white;
+    classDef fin fill:#95a5a6,stroke:#7f8c8d,stroke-width:2px,color:white;
+
+    subgraph FASE_1 ["Fase 1: Solicitud y Contratacion"]
+        A([Inicio: Cliente solicita servicio]):::inicio --> B[Cotizacion del flete]:::proceso
+        B --> C{Cliente Acepta?}:::decision
+        C -->|No| Z([Fin del Proceso]):::fin
+        C -->|Si| D[Confirmacion y Booking]:::proceso
+    end
+
+    subgraph FASE_2 ["Fase 2: Documentacion y Carta Porte"]
+        E[Recopilacion de Datos Fiscales y de Carga]:::proceso
+        F[Emision de Contrato de Servicio]:::documento
+        G[Generacion de CARTA PORTE]:::documento
+        G1[Validacion SAT / Autoridad]:::proceso
+        H[Asignacion de Seguro de Carga]:::documento
+        
+        E --> F
+        F --> G
+        G --> G1
+        G1 --> H
+    end
+
+    subgraph FASE_3 ["Fase 3: Recoleccion y Transporte"]
+        I[Asignacion de Unidad y Operador]:::proceso
+        J[Unidad se dirige a Origen]:::proceso
+        K[Llegada a Recoleccion]:::proceso
+        L[Carga y Estiba de Mercancia]:::proceso
+        M[Validacion Fisica vs Documental]:::proceso
+        N[Inicio de Ruta / Despacho]:::proceso
+        O[Transito y Monitoreo GPS]:::proceso
+        O1[Protocolo de Seguridad]:::decision
+        P[Arribo a Destino]:::proceso
+        
+        I --> J
+        J --> K
+        K --> L
+        L --> M
+        M --> N
+        N --> O
+        O -->|Incidencia| O1
+        O -->|Normal| P
+        O1 --> P
+    end
+
+    subgraph FASE_4 ["Fase 4: Entrega y Cobranza"]
+        Q[Maniobras de Descarga]:::proceso
+        R[Inspeccion de Recibo]:::proceso
+        S[Firma de POD - Prueba de Entrega]:::documento
+        T[Liberacion de Unidad]:::proceso
+        U[Retorno de Evidencias a Base]:::proceso
+        V[Facturacion Final]:::documento
+        W([Fin: Cobranza y Cierre]):::fin
+        
+        Q --> R
+        R --> S
+        S --> T
+        T --> U
+        U --> V
+        V --> W
+    end
+
+    D --> E
+    H --> I
+    P --> Q

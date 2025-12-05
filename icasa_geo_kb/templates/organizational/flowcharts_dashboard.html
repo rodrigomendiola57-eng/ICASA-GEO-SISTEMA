@@ -1,0 +1,1152 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Flujogramas - ICASA GEO{% endblock %}
+
+{% block extra_head %}
+<style>
+.guide-tooltip {
+    position: absolute;
+    background: linear-gradient(135deg, #059669, #047857);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    max-width: 280px;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+}
+
+.guide-tooltip.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.guide-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 20px;
+    border: 8px solid transparent;
+    border-top-color: #047857;
+}
+
+.guided-element {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.guided-element.highlight {
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.3);
+    border-radius: 8px;
+}
+
+.step-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    z-index: 999;
+    min-width: 200px;
+}
+
+.complexity-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.complexity-simple { background: #dcfce7; color: #166534; }
+.complexity-medium { background: #fef3c7; color: #92400e; }
+.complexity-complex { background: #fee2e2; color: #991b1b; }
+</style>
+{% endblock %}
+
+{% block page_title %}🔄 Flujogramas{% endblock %}
+
+{% block breadcrumb %}
+<li>
+    <div class="flex items-center">
+        <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+        </svg>
+        <span class="ml-1 text-sm font-medium text-gray-500">Flujogramas</span>
+    </div>
+</li>
+{% endblock %}
+
+{% block content %}
+<!-- Indicador de Pasos Guiados -->
+<div id="stepIndicator" class="step-indicator" style="display: none;">
+    <div class="flex items-center mb-2">
+        <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+        <span class="font-semibold text-sm">Guía Interactiva</span>
+    </div>
+    <div class="text-sm text-gray-600">
+        <span id="currentStep">Paso 1</span> de <span id="totalSteps">5</span>
+    </div>
+    <div class="mt-2">
+        <div class="w-full bg-gray-200 rounded-full h-2">
+            <div id="progressBar" class="bg-green-500 h-2 rounded-full transition-all duration-300" style="width: 20%"></div>
+        </div>
+    </div>
+    <button id="skipGuide" class="mt-3 text-xs text-gray-500 hover:text-gray-700">Saltar guía</button>
+</div>
+
+<!-- Header con Bienvenida Inteligente -->
+<div class="mb-8">
+    <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
+        <div class="flex items-start justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 mb-2">
+                    {% if user.first_name %}
+                        ¡Hola {{ user.first_name }}! 👋
+                    {% else %}
+                        ¡Bienvenido! 👋
+                    {% endif %}
+                </h1>
+                <p class="text-gray-600 mb-4">
+                    {% if total_flows == 0 %}
+                        Parece que es tu primera vez aquí. Te ayudaremos a crear tu primer flujograma paso a paso.
+                    {% elif total_flows < 3 %}
+                        Tienes {{ total_flows }} proceso{{ total_flows|pluralize }}. ¿Listo para crear más?
+                    {% else %}
+                        Gestiona tus {{ total_flows }} procesos de manera eficiente.
+                    {% endif %}
+                </p>
+                
+                {% if total_flows == 0 %}
+                <div class="flex items-center space-x-4">
+                    <button id="startGuide" class="btn-corporate bg-green-600 text-white hover:bg-green-700">
+                        <i class="fas fa-play mr-2"></i>
+                        Comenzar Tutorial
+                    </button>
+                    <button class="btn-corporate bg-white text-green-600 border border-green-600 hover:bg-green-50">
+                        <i class="fas fa-book mr-2"></i>
+                        Ver Documentación
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="text-right">
+                <div class="text-3xl font-bold text-green-600">{{ total_flows }}</div>
+                <div class="text-sm text-gray-500">Procesos Activos</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Acciones Rápidas -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <!-- Crear Nuevo Proceso -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-all">
+        <div class="flex items-center mb-4">
+            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-plus text-green-600 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="font-semibold text-gray-900">Crear Nuevo Proceso</h3>
+                <p class="text-sm text-gray-500">Proceso organizacional</p>
+            </div>
+        </div>
+        <button onclick="showCreateNewModal()" class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium">
+            <i class="fas fa-plus mr-2"></i>Crear Proceso
+        </button>
+    </div>
+
+    <!-- Estadísticas por Departamento -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <div class="flex items-center mb-4">
+            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-building text-blue-600 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="font-semibold text-gray-900">Por Departamento</h3>
+                <p class="text-sm text-gray-500">Distribución de procesos</p>
+            </div>
+        </div>
+        <div class="space-y-2">
+            {% for dept, stats in department_stats.items %}
+            <div class="flex items-center justify-between text-sm">
+                <span class="text-gray-600">{{ dept }}</span>
+                <span class="font-medium">{{ stats.total }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Acceso Rápido -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <div class="flex items-center mb-4">
+            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-bolt text-purple-600 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="font-semibold text-gray-900">Acceso Rápido</h3>
+                <p class="text-sm text-gray-500">Funciones principales</p>
+            </div>
+        </div>
+        <div class="space-y-2">
+            <a href="{% url 'organizational:flowchart_editor' %}" class="block w-full text-left p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
+                <i class="fas fa-edit mr-2"></i>Editor de Procesos
+            </a>
+            <button onclick="exportAllProcesses()" class="w-full text-left p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
+                <i class="fas fa-download mr-2"></i>Exportar Todos
+            </button>
+            <button onclick="showImportModal()" class="w-full text-left p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
+                <i class="fas fa-upload mr-2"></i>Importar Procesos
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas Inteligentes -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-check-circle text-green-600 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <div class="text-2xl font-bold text-gray-900">{{ published_flows }}</div>
+                <div class="text-sm text-gray-500">Publicados</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-edit text-yellow-600 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <div class="text-2xl font-bold text-gray-900">{{ draft_flows }}</div>
+                <div class="text-sm text-gray-500">En Borrador</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-clock text-blue-600 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <div class="text-2xl font-bold text-gray-900">{{ pending_review }}</div>
+                <div class="text-sm text-gray-500">En Revisión</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-users text-purple-600 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <div class="text-2xl font-bold text-gray-900">{{ collaborators }}</div>
+                <div class="text-sm text-gray-500">Colaboradores</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Procesos con Filtros Inteligentes -->
+<div class="bg-white rounded-xl border border-gray-200">
+    <div class="p-6 border-b border-gray-200">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">Mis Procesos</h2>
+            <div class="flex items-center space-x-3">
+                <!-- Filtros Inteligentes -->
+                <select id="categoryFilter" class="text-sm border border-gray-300 rounded-lg px-3 py-2">
+                    <option value="">Todas las categorías</option>
+                    <option value="operational">Operativos</option>
+                    <option value="strategic">Estratégicos</option>
+                    <option value="support">Soporte</option>
+                    <option value="audit">Auditoría</option>
+                    <option value="quality">Calidad</option>
+                    <option value="safety">Seguridad</option>
+                    <option value="finance">Financieros</option>
+                    <option value="hr">RRHH</option>
+                    <option value="it">TI</option>
+                    <option value="legal">Legales</option>
+                </select>
+                
+                <select id="departmentFilter" class="text-sm border border-gray-300 rounded-lg px-3 py-2">
+                    <option value="">Todos los departamentos</option>
+                    <option value="Dirección General">Dirección General</option>
+                    <option value="Administrativo">Administrativo</option>
+                    <option value="Comercial">Comercial</option>
+                    <option value="Operaciones">Operaciones</option>
+                    <option value="RRHH">RRHH</option>
+                    <option value="Finanzas">Finanzas</option>
+                    <option value="Mantenimiento">Mantenimiento</option>
+                    <option value="Sistemas">Sistemas</option>
+                    <option value="Calidad">Calidad</option>
+                    <option value="Seguridad">Seguridad</option>
+                    <option value="Logística">Logística</option>
+                    <option value="Compras">Compras</option>
+                    <option value="Legal">Legal</option>
+                </select>
+                
+                <select id="statusFilter" class="text-sm border border-gray-300 rounded-lg px-3 py-2">
+                    <option value="">Todos los estados</option>
+                    <option value="draft">Borrador</option>
+                    <option value="review">En Revisión</option>
+                    <option value="approved">Aprobado</option>
+                    <option value="published">Publicado</option>
+                </select>
+                
+                <button id="viewToggle" class="p-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    <i class="fas fa-th-large"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Búsqueda Inteligente -->
+        <div class="relative">
+            <input type="text" id="smartSearch" placeholder="Buscar por nombre, descripción o responsable..." 
+                   class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+        </div>
+        <div class="mt-2">
+            <span id="resultCounter" class="text-sm text-gray-500"></span>
+        </div>
+    </div>
+    
+    <div id="processList" class="p-6">
+        {% if flows %}
+            <div class="space-y-4">
+                {% for flow in flows %}
+                <div class="flow-item border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all cursor-pointer"
+                     data-flow-id="{{ flow.id }}"
+                     data-category="{{ flow.category.category_type }}" 
+                     data-status="{{ flow.status }}"
+                     data-department="{{ flow.responsible_department }}"
+                     data-search="{{ flow.title|lower }} {{ flow.description|lower }} {{ flow.responsible_department|lower }}">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-lg flex items-center justify-center" 
+                                 style="background-color: {{ flow.category.color }}20;">
+                                <i class="{{ flow.category.icon }} text-lg" style="color: {{ flow.category.color }};"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900">{{ flow.title }}</h3>
+                                <p class="text-sm text-gray-500">{{ flow.description|truncatechars:60 }}</p>
+                                <div class="flex items-center space-x-4 mt-2">
+                                    <span class="text-xs text-gray-500">
+                                        <i class="fas fa-building mr-1"></i>
+                                        {{ flow.responsible_department }}
+                                    </span>
+                                    <span class="text-xs text-gray-500">
+                                        <i class="fas fa-user mr-1"></i>
+                                        {{ flow.owner.get_full_name|default:flow.owner.username }}
+                                    </span>
+                                    <span class="text-xs text-gray-500">
+                                        <i class="fas fa-clock mr-1"></i>
+                                        {{ flow.updated_at|timesince }} ago
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-3">
+                            <span class="complexity-badge complexity-{{ flow.complexity_level }}">
+                                {{ flow.get_complexity_level_display }}
+                            </span>
+                            <span class="text-xs px-2 py-1 rounded-full bg-{{ flow.status_color }}-100 text-{{ flow.status_color }}-700">
+                                {{ flow.get_status_display }}
+                            </span>
+                            <div class="flex items-center space-x-1">
+                                <a href="{% url 'organizational:flowchart_editor_edit' flow.id %}" class="p-2 text-gray-400 hover:text-green-600 transition-colors" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button onclick="previewFlow({{ flow.id }})" class="p-2 text-gray-400 hover:text-blue-600 transition-colors" title="Ver">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="duplicateFlow({{ flow.id }})" class="p-2 text-gray-400 hover:text-purple-600 transition-colors" title="Duplicar">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button onclick="deleteFlow({{ flow.id }}, '{{ flow.title|escapejs }}')" class="p-2 text-gray-400 hover:text-red-600 transition-colors" title="Eliminar">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <!-- Estado Vacío con Guía -->
+            <div class="text-center py-12">
+                <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-sitemap text-3xl text-gray-400"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">¡Comienza a crear procesos!</h3>
+                <p class="text-gray-500 mb-6 max-w-md mx-auto">
+                    Los flujogramas te ayudan a documentar y optimizar los procesos de tu organización. 
+                    Te guiaremos paso a paso.
+                </p>
+                <div class="flex items-center justify-center space-x-4">
+                    <a href="{% url 'organizational:flowchart_editor' %}" class="btn-corporate bg-green-600 text-white hover:bg-green-700">
+                        <i class="fas fa-magic mr-2"></i>
+                        Crear Mi Primer Proceso
+                    </a>
+                    <button onclick="startGuide()" class="btn-corporate bg-white text-gray-600 border border-gray-300 hover:bg-gray-50">
+                        <i class="fas fa-play mr-2"></i>
+                        Tutorial Interactivo
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Tooltip Guiado -->
+<div id="guideTooltip" class="guide-tooltip"></div>
+
+<!-- Modal para Crear Nuevo Proceso -->
+<div id="createNewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg max-w-md w-full p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Crear Nuevo Proceso</h3>
+                <button onclick="hideCreateNewModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="createNewForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Proceso *</label>
+                    <input type="text" id="newProcessTitle" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="Ej: Proceso de Ventas" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Departamento *</label>
+                    <select id="newProcessDepartment" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" required>
+                        <option value="">Seleccionar departamento</option>
+                        <option value="Dirección General">Dirección General</option>
+                        <option value="Administrativo">Administrativo</option>
+                        <option value="Comercial">Comercial</option>
+                        <option value="Operaciones">Operaciones</option>
+                        <option value="RRHH">Recursos Humanos</option>
+                        <option value="Finanzas">Finanzas</option>
+                        <option value="Mantenimiento">Mantenimiento</option>
+                        <option value="Sistemas">Sistemas</option>
+                        <option value="Calidad">Calidad</option>
+                        <option value="Seguridad">Seguridad</option>
+                        <option value="Logística">Logística</option>
+                        <option value="Compras">Compras</option>
+                        <option value="Legal">Legal</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Categoría *</label>
+                    <select id="newProcessCategory" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" required>
+                        <option value="">Seleccionar categoría</option>
+                        <option value="operational">Procesos Operativos</option>
+                        <option value="strategic">Procesos Estratégicos</option>
+                        <option value="support">Procesos de Soporte</option>
+                        <option value="audit">Procesos de Auditoría</option>
+                        <option value="quality">Procesos de Calidad</option>
+                        <option value="safety">Procesos de Seguridad</option>
+                        <option value="finance">Procesos Financieros</option>
+                        <option value="hr">Procesos de RRHH</option>
+                        <option value="it">Procesos de TI</option>
+                        <option value="legal">Procesos Legales</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Descripción breve *</label>
+                    <textarea id="newProcessDescription" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="Breve descripción del proceso..." required></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" onclick="hideCreateNewModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                        <i class="fas fa-arrow-right mr-2"></i>Continuar al Editor
+                    </button>
+                    <button type="button" onclick="submitCreateForm()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-rocket mr-2"></i>Crear Ahora
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Selección de Plantillas -->
+<div id="templateModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg max-w-2xl w-full p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Seleccionar Plantilla</h3>
+                <button onclick="hideTemplateModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+                {% for template in popular_templates %}
+                <div class="template-card border border-gray-200 rounded-lg p-4 hover:shadow-md cursor-pointer transition-all" onclick="createFromTemplate('{{ template.name }}')">                    <div class="flex items-center mb-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-sitemap text-blue-600"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-sm">{{ template.name }}</h4>
+                            <p class="text-xs text-gray-500">{{ template.category }}</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-3">{{ template.description }}</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
+                            {{ template.get_difficulty_level_display }}
+                        </span>
+                        <span class="text-xs text-gray-500">
+                            <i class="fas fa-download mr-1"></i>{{ template.usage_count }} usos
+                        </span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-span-2 text-center py-8 text-gray-500">
+                    <i class="fas fa-box-open text-3xl mb-2"></i>
+                    <p>No hay plantillas disponibles</p>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button onclick="hideTemplateModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancelar</button>
+                <a href="{% url 'organizational:flowchart_editor' %}" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Crear desde Cero</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Sistema de Guía Interactiva
+    const guideSteps = [
+        {
+            element: '#createNew',
+            title: '¡Empecemos! 🚀',
+            content: 'Aquí puedes crear nuevos flujogramas. Te recomiendo usar el "Asistente Guiado" para tu primer proceso.',
+            position: 'bottom'
+        },
+        {
+            element: '#templates',
+            title: 'Plantillas Listas 📋',
+            content: 'Usa plantillas predefinidas para procesos comunes como contratación, compras, o auditorías.',
+            position: 'bottom'
+        },
+        {
+            element: '#recent',
+            title: 'Acceso Rápido ⚡',
+            content: 'Aquí aparecerán tus procesos recientes para acceso rápido.',
+            position: 'bottom'
+        },
+        {
+            element: '#smartSearch',
+            title: 'Búsqueda Inteligente 🔍',
+            content: 'Busca procesos por nombre, descripción o departamento responsable.',
+            position: 'top'
+        },
+        {
+            element: '#processList',
+            title: '¡Listo para empezar! ✨',
+            content: 'Aquí verás todos tus procesos organizados. ¡Ahora crea tu primer flujograma!',
+            position: 'top'
+        }
+    ];
+    
+    let currentStep = 0;
+    let guideActive = false;
+    
+    const tooltip = document.getElementById('guideTooltip');
+    const stepIndicator = document.getElementById('stepIndicator');
+    const progressBar = document.getElementById('progressBar');
+    
+    function showGuideStep(stepIndex) {
+        if (stepIndex >= guideSteps.length) {
+            endGuide();
+            return;
+        }
+        
+        const step = guideSteps[stepIndex];
+        const element = document.querySelector(step.element);
+        
+        if (!element) return;
+        
+        // Highlight element
+        document.querySelectorAll('.guided-element').forEach(el => {
+            el.classList.remove('highlight');
+        });
+        element.classList.add('highlight');
+        
+        // Position tooltip
+        const rect = element.getBoundingClientRect();
+        tooltip.innerHTML = `
+            <div class="font-semibold mb-2">${step.title}</div>
+            <div class="mb-3">${step.content}</div>
+            <div class="flex justify-between items-center">
+                <button onclick="previousStep()" class="text-sm opacity-75 hover:opacity-100" ${stepIndex === 0 ? 'style="visibility:hidden"' : ''}>
+                    ← Anterior
+                </button>
+                <button onclick="nextStep()" class="text-sm bg-white bg-opacity-20 px-3 py-1 rounded">
+                    ${stepIndex === guideSteps.length - 1 ? 'Finalizar' : 'Siguiente →'}
+                </button>
+            </div>
+        `;
+        
+        // Position tooltip
+        if (step.position === 'bottom') {
+            tooltip.style.top = (rect.bottom + 10) + 'px';
+            tooltip.style.left = rect.left + 'px';
+        } else {
+            tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+            tooltip.style.left = rect.left + 'px';
+        }
+        
+        tooltip.classList.add('show');
+        
+        // Update progress
+        document.getElementById('currentStep').textContent = `Paso ${stepIndex + 1}`;
+        document.getElementById('totalSteps').textContent = guideSteps.length;
+        progressBar.style.width = `${((stepIndex + 1) / guideSteps.length) * 100}%`;
+    }
+    
+    function startGuide() {
+        guideActive = true;
+        currentStep = 0;
+        stepIndicator.style.display = 'block';
+        showGuideStep(currentStep);
+    }
+    
+    function endGuide() {
+        guideActive = false;
+        tooltip.classList.remove('show');
+        stepIndicator.style.display = 'none';
+        document.querySelectorAll('.guided-element').forEach(el => {
+            el.classList.remove('highlight');
+        });
+    }
+    
+    window.nextStep = function() {
+        currentStep++;
+        showGuideStep(currentStep);
+    };
+    
+    window.previousStep = function() {
+        if (currentStep > 0) {
+            currentStep--;
+            showGuideStep(currentStep);
+        }
+    };
+    
+    // Event listeners
+    document.getElementById('startGuide')?.addEventListener('click', startGuide);
+    document.getElementById('startFirstFlow')?.addEventListener('click', startGuide);
+    document.getElementById('skipGuide')?.addEventListener('click', endGuide);
+    
+    // Filtros inteligentes
+    const categoryFilter = document.getElementById('categoryFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const searchInput = document.getElementById('smartSearch');
+    
+    function filterFlows() {
+        const category = categoryFilter.value;
+        const status = statusFilter.value;
+        const search = searchInput.value.toLowerCase();
+        
+        document.querySelectorAll('.flow-item').forEach(item => {
+            const itemCategory = item.dataset.category;
+            const itemStatus = item.dataset.status;
+            const itemSearch = item.dataset.search;
+            
+            const categoryMatch = !category || itemCategory === category;
+            const statusMatch = !status || itemStatus === status;
+            const searchMatch = !search || itemSearch.includes(search);
+            
+            if (categoryMatch && statusMatch && searchMatch) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    
+    const departmentFilter = document.getElementById('departmentFilter');
+    
+    function filterFlows() {
+        const category = categoryFilter.value;
+        const status = statusFilter.value;
+        const department = departmentFilter.value;
+        const search = searchInput.value.toLowerCase();
+        
+        document.querySelectorAll('.flow-item').forEach(item => {
+            const itemCategory = item.dataset.category;
+            const itemStatus = item.dataset.status;
+            const itemDepartment = item.dataset.department;
+            const itemSearch = item.dataset.search;
+            
+            const categoryMatch = !category || itemCategory === category;
+            const statusMatch = !status || itemStatus === status;
+            const departmentMatch = !department || itemDepartment === department;
+            const searchMatch = !search || itemSearch.includes(search);
+            
+            if (categoryMatch && statusMatch && departmentMatch && searchMatch) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    
+    function filterFlows() {
+        const category = categoryFilter?.value || '';
+        const status = statusFilter?.value || '';
+        const department = departmentFilter?.value || '';
+        const search = searchInput?.value.toLowerCase() || '';
+        
+        let visibleCount = 0;
+        
+        document.querySelectorAll('.flow-item').forEach(item => {
+            const itemCategory = item.dataset.category || '';
+            const itemStatus = item.dataset.status || '';
+            const itemDepartment = item.dataset.department || '';
+            const itemSearch = item.dataset.search || '';
+            
+            const categoryMatch = !category || itemCategory === category;
+            const statusMatch = !status || itemStatus === status;
+            const departmentMatch = !department || itemDepartment === department;
+            const searchMatch = !search || itemSearch.includes(search);
+            
+            if (categoryMatch && statusMatch && departmentMatch && searchMatch) {
+                item.style.display = 'block';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        
+        const resultCounter = document.getElementById('resultCounter');
+        if (resultCounter) {
+            resultCounter.textContent = `${visibleCount} proceso${visibleCount !== 1 ? 's' : ''} encontrado${visibleCount !== 1 ? 's' : ''}`;
+        }
+    }
+    
+    categoryFilter?.addEventListener('change', filterFlows);
+    statusFilter?.addEventListener('change', filterFlows);
+    departmentFilter?.addEventListener('change', filterFlows);
+    searchInput?.addEventListener('input', filterFlows);
+    
+    // Ejecutar filtros iniciales
+    filterFlows();
+    
+    // Auto-start guide for new users
+    {% if total_flows == 0 %}
+    setTimeout(() => {
+        if (confirm('¿Te gustaría que te mostremos cómo funciona el sistema de flujogramas?')) {
+            startGuide();
+        }
+    }, 1000);
+    {% endif %}
+    
+    // Agregar CSRF token al meta tag si no existe
+    if (!document.querySelector('meta[name="csrf-token"]')) {
+        const csrfMeta = document.createElement('meta');
+        csrfMeta.name = 'csrf-token';
+        csrfMeta.content = '{{ csrf_token }}';
+        document.head.appendChild(csrfMeta);
+    }
+});
+
+// Funciones para acciones de procesos
+function previewFlow(flowId) {
+    // Abrir modal de vista previa o redirigir al editor en modo solo lectura
+    window.open(`/organizational/flujogramas/editor/${flowId}/`, '_blank');
+}
+
+function duplicateFlow(flowId) {
+    if (confirm('¿Estás seguro de que quieres duplicar este proceso?')) {
+        const csrfToken = getCSRFToken();
+        
+        if (!csrfToken) {
+            showNotification('Error: Token CSRF no encontrado', 'error');
+            return;
+        }
+        
+        fetch(`/organizational/api/flujogramas/${flowId}/duplicate/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                'action': 'duplicate',
+                'process_id': flowId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message || 'Proceso duplicado exitosamente', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showNotification(data.error || 'Error al duplicar el proceso', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error de conexión al duplicar proceso', 'error');
+        });
+    }
+}
+
+function deleteFlow(flowId, flowTitle) {
+    if (confirm(`¿Estás seguro de que quieres eliminar el proceso "${flowTitle}"? Esta acción no se puede deshacer.`)) {
+        const csrfToken = getCSRFToken();
+        
+        if (!csrfToken) {
+            showNotification('Error: Token CSRF no encontrado', 'error');
+            return;
+        }
+        
+        // Mostrar indicador de carga
+        const flowElement = document.querySelector(`[data-flow-id="${flowId}"]`);
+        if (flowElement) {
+            flowElement.style.opacity = '0.5';
+            flowElement.style.pointerEvents = 'none';
+        }
+        
+        fetch(`/organizational/api/flujogramas/${flowId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                'action': 'delete',
+                'process_id': flowId,
+                'confirm': true
+            })
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            if (data.success) {
+                // Remover el elemento del DOM
+                if (flowElement) {
+                    flowElement.style.transition = 'all 0.3s ease';
+                    flowElement.style.transform = 'translateX(-100%)';
+                    flowElement.style.opacity = '0';
+                    setTimeout(() => {
+                        flowElement.remove();
+                        updateProcessCount();
+                        
+                        // Verificar si no quedan procesos
+                        const remainingFlows = document.querySelectorAll('.flow-item');
+                        if (remainingFlows.length === 0) {
+                            location.reload(); // Recargar para mostrar estado vacío
+                        }
+                    }, 300);
+                }
+                showNotification(data.message || 'Proceso eliminado exitosamente', 'success');
+            } else {
+                // Restaurar elemento si falla
+                if (flowElement) {
+                    flowElement.style.opacity = '1';
+                    flowElement.style.pointerEvents = 'auto';
+                }
+                showNotification(data.error || 'Error al eliminar el proceso', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error completo:', error);
+            // Restaurar elemento si falla
+            if (flowElement) {
+                flowElement.style.opacity = '1';
+                flowElement.style.pointerEvents = 'auto';
+            }
+            showNotification('Error de conexión al eliminar proceso', 'error');
+        });
+    }
+}
+
+function getCSRFToken() {
+    // Método 1: Meta tag
+    const metaTag = document.querySelector('meta[name="csrf-token"]');
+    if (metaTag) {
+        return metaTag.getAttribute('content');
+    }
+    
+    // Método 2: Cookie
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    const cookieToken = getCookie('csrftoken');
+    if (cookieToken) {
+        return cookieToken;
+    }
+    
+    // Método 3: Input hidden
+    const hiddenInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (hiddenInput) {
+        return hiddenInput.value;
+    }
+    
+    // Método 4: Crear token dinámicamente
+    const csrfForm = document.createElement('form');
+    csrfForm.style.display = 'none';
+    csrfForm.innerHTML = '{% csrf_token %}';
+    document.body.appendChild(csrfForm);
+    const dynamicInput = csrfForm.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (dynamicInput) {
+        const token = dynamicInput.value;
+        document.body.removeChild(csrfForm);
+        return token;
+    }
+    
+    console.error('CSRF token no encontrado en ningún método');
+    return '';
+}
+
+// Manejar formulario de crear nuevo proceso
+function submitCreateForm() {
+    const title = document.getElementById('newProcessTitle')?.value.trim();
+    const department = document.getElementById('newProcessDepartment')?.value;
+    const category = document.getElementById('newProcessCategory')?.value;
+    const description = document.getElementById('newProcessDescription')?.value.trim();
+    
+    console.log('Datos del formulario:', { title, department, category, description });
+    
+    if (!title) {
+        alert('Por favor ingresa un nombre para el proceso');
+        return false;
+    }
+    
+    if (!department) {
+        alert('Por favor selecciona un departamento');
+        return false;
+    }
+    
+    if (!category) {
+        alert('Por favor selecciona una categoría');
+        return false;
+    }
+    
+    if (!description) {
+        alert('Por favor ingresa una descripción del proceso');
+        return false;
+    }
+    
+    // Crear URL con parámetros
+    const params = new URLSearchParams({
+        title: title,
+        department: department,
+        category: category,
+        description: description
+    });
+    
+    const url = `/organizational/flujogramas/editor/?${params.toString()}`;
+    console.log('Redirigiendo a:', url);
+    window.location.href = url;
+    return true;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const createNewForm = document.getElementById('createNewForm');
+    if (createNewForm) {
+        createNewForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitCreateForm();
+        });
+    }
+});
+
+// Cerrar modales con Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideCreateNewModal();
+        hideTemplateModal();
+    }
+});
+
+// Manejar clics fuera del modal
+document.addEventListener('click', function(e) {
+    const createModal = document.getElementById('createNewModal');
+    const templateModal = document.getElementById('templateModal');
+    
+    if (createModal && !createModal.classList.contains('hidden')) {
+        if (e.target === createModal) {
+            hideCreateNewModal();
+        }
+    }
+    
+    if (templateModal && !templateModal.classList.contains('hidden')) {
+        if (e.target === templateModal) {
+            hideTemplateModal();
+        }
+    }
+});
+
+// Funciones para modal de crear nuevo
+function showCreateNewModal() {
+    console.log('Abriendo modal...');
+    const modal = document.getElementById('createNewModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        // Agregar animación de entrada
+        const modalContent = modal.querySelector('div > div');
+        if (modalContent) {
+            modalContent.style.transform = 'scale(0.95)';
+            modalContent.style.opacity = '0';
+            setTimeout(() => {
+                modalContent.style.transform = 'scale(1)';
+                modalContent.style.opacity = '1';
+                modalContent.style.transition = 'all 0.2s ease';
+            }, 10);
+        }
+        setTimeout(() => {
+            const titleInput = document.getElementById('newProcessTitle');
+            if (titleInput) {
+                titleInput.focus();
+            }
+        }, 100);
+    } else {
+        console.error('Modal no encontrado');
+    }
+}
+
+function hideCreateNewModal() {
+    const modal = document.getElementById('createNewModal');
+    const form = document.getElementById('createNewForm');
+    
+    if (modal) {
+        // Agregar animación de salida
+        const modalContent = modal.querySelector('div > div');
+        if (modalContent) {
+            modalContent.style.transform = 'scale(0.95)';
+            modalContent.style.opacity = '0';
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modalContent.style.transform = '';
+                modalContent.style.opacity = '';
+                modalContent.style.transition = '';
+            }, 200);
+        } else {
+            modal.classList.add('hidden');
+        }
+    }
+    
+    if (form) {
+        form.reset();
+    }
+}
+
+// Funciones para modal de plantillas
+function showTemplateModal() {
+    document.getElementById('templateModal').classList.remove('hidden');
+}
+
+function hideTemplateModal() {
+    document.getElementById('templateModal').classList.add('hidden');
+}
+
+function createFromTemplate(templateName) {
+    // Redirigir al editor con parámetro de plantilla
+    const editorUrl = `{% url 'organizational:flowchart_editor' %}?template=${encodeURIComponent(templateName)}`;
+    window.location.href = editorUrl;
+}
+
+function showNotification(message, type = 'info') {
+    // Remover notificaciones existentes
+    const existingNotifications = document.querySelectorAll('.notification-toast');
+    existingNotifications.forEach(n => n.remove());
+    
+    const notification = document.createElement('div');
+    notification.className = `notification-toast fixed top-4 right-4 px-6 py-4 rounded-lg text-white z-50 transition-all duration-300 shadow-lg ${
+        type === 'success' ? 'bg-green-500' : 
+        type === 'error' ? 'bg-red-500' : 
+        'bg-blue-500'
+    }`;
+    
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${
+                type === 'success' ? 'fa-check-circle' : 
+                type === 'error' ? 'fa-exclamation-circle' : 
+                'fa-info-circle'
+            } mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove después de 5 segundos
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 300);
+        }
+    }, 5000);
+}
+
+function updateProcessCount() {
+    const totalElement = document.querySelector('.text-3xl.font-bold.text-green-600');
+    if (totalElement) {
+        const currentCount = parseInt(totalElement.textContent) - 1;
+        totalElement.textContent = Math.max(0, currentCount);
+        
+        // Actualizar también el contador de resultados
+        const resultCounter = document.getElementById('resultCounter');
+        if (resultCounter) {
+            const visibleItems = document.querySelectorAll('.flow-item[style*="display: block"], .flow-item:not([style*="display: none"])');
+            const count = visibleItems.length - 1; // -1 porque acabamos de eliminar uno
+            resultCounter.textContent = `${Math.max(0, count)} proceso${count !== 1 ? 's' : ''} encontrado${count !== 1 ? 's' : ''}`;
+        }
+    }
+}
+
+function exportAllProcesses() {
+    showNotification('Funcionalidad de exportación en desarrollo', 'info');
+}
+
+function showImportModal() {
+    showNotification('Funcionalidad de importación en desarrollo', 'info');
+}
+</script>
+{% endblock %}

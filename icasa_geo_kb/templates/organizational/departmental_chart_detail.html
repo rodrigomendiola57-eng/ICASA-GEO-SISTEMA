@@ -1,0 +1,599 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}{{ chart.department }} - Organigrama ICASA{% endblock %}
+{% block page_title %}{{ chart.department }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="flex items-center space-x-3 mb-2">
+                    <a href="{% url 'organizational:dashboard' %}" class="text-gray-500 hover:text-green-600">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h1 class="text-3xl font-bold text-gray-900">{{ chart.department }}</h1>
+                    <span class="px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-800">
+                        Departamento
+                    </span>
+                </div>
+                <p class="text-gray-600">{{ chart.name }}</p>
+                {% if chart.description %}
+                    <p class="text-sm text-gray-500 mt-1">{{ chart.description }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <button onclick="showUploadModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-upload mr-2"></i>{% if chart.chart_file %}Cambiar Archivo{% else %}Subir Archivo{% endif %}
+                </button>
+                
+                {% if chart.chart_file %}
+                    <a href="{{ chart.chart_file.url }}" target="_blank" 
+                       class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-external-link-alt mr-2"></i>Ver Archivo
+                    </a>
+                    <a href="{{ chart.chart_file.url }}" download 
+                       class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                        <i class="fas fa-download mr-2"></i>Descargar
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Estadísticas del Departamento -->
+        <div class="mt-6 grid grid-cols-5 gap-4">
+            <div class="bg-blue-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-blue-600">{{ department_stats.total_positions }}</div>
+                <div class="text-sm text-blue-800">Total Posiciones</div>
+            </div>
+            <div class="bg-green-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-green-600">{{ department_stats.occupied_positions }}</div>
+                <div class="text-sm text-green-800">Posiciones Ocupadas</div>
+            </div>
+            <div class="bg-red-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-red-600">{{ department_stats.vacant_positions }}</div>
+                <div class="text-sm text-red-800">Vacantes</div>
+            </div>
+            <div class="bg-purple-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-purple-600">{{ department_stats.hierarchy_levels }}</div>
+                <div class="text-sm text-purple-800">Niveles Jerárquicos</div>
+            </div>
+            <div class="bg-orange-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-orange-600">{{ department_stats.total_versions }}</div>
+                <div class="text-sm text-orange-800">Versiones</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="p-6">
+        <!-- Grid Principal -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Columna Izquierda: Historial de Organigramas -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">
+                            <i class="fas fa-history mr-2 text-blue-600"></i>Organigramas - {{ chart.department }}
+                        </h3>
+                        <button onclick="showUploadModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Subir Nuevo
+                        </button>
+                    </div>
+                    
+                    {% if all_versions %}
+                        <div class="space-y-4">
+                            {% for version in all_versions %}
+                                <div class="border rounded-lg p-4 {% if version.status == 'active' %}border-green-300 bg-green-50{% else %}border-gray-200 bg-gray-50{% endif %}">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="flex items-center">
+                                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white mr-3
+                                                {% if version.status == 'active' %}bg-green-600{% else %}bg-gray-500{% endif %}">
+                                                {{ forloop.counter }}
+                                            </div>
+                                            <div>
+                                                <div class="font-medium text-gray-900">
+                                                    {% if version.status == 'active' %}
+                                                        <i class="fas fa-star text-yellow-500 mr-1"></i>Versión Actual
+                                                    {% else %}
+                                                        Versión {{ forloop.counter }}
+                                                    {% endif %}
+                                                </div>
+                                                <div class="text-sm text-gray-600">
+                                                    {{ version.created_at|date:"d/m/Y H:i" }} - {{ version.created_by.get_full_name|default:"Sistema" }}
+                                                </div>
+                                                {% if version.description %}
+                                                    <div class="text-xs text-gray-500 mt-1">{{ version.description }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="flex space-x-2">
+                                            {% if version.chart_file %}
+                                                <a href="{{ version.chart_file.url }}" target="_blank" 
+                                                   class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700" title="Ver archivo">
+                                                    <i class="fas fa-eye mr-1"></i>Ver
+                                                </a>
+                                                <a href="{{ version.chart_file.url }}" download 
+                                                   class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700" title="Descargar">
+                                                    <i class="fas fa-download mr-1"></i>Descargar
+                                                </a>
+                                            {% endif %}
+                                            {% if version.status != 'active' %}
+                                                <button onclick="activateVersion({{ version.id }})" 
+                                                        class="px-3 py-1 bg-orange-600 text-white rounded text-sm hover:bg-orange-700" title="Activar versión">
+                                                    <i class="fas fa-check mr-1"></i>Activar
+                                                </button>
+                                            {% endif %}
+                                            {% if user.is_staff %}
+                                                <button onclick="deleteVersion({{ version.id }})" 
+                                                        class="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700" title="Eliminar archivo">
+                                                    <i class="fas fa-trash mr-1"></i>Eliminar
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    {% if version.chart_file %}
+                                        <div class="bg-white rounded p-3 border">
+                                            <div class="flex items-center text-sm text-gray-600">
+                                                <i class="fas fa-file mr-2"></i>
+                                                <span class="font-medium">{{ version.chart_file.name }}</span>
+                                                <span class="ml-auto text-xs">{{ version.chart_file.size|filesizeformat }}</span>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <!-- Sin archivos -->
+                        <div class="bg-gray-100 rounded-lg p-12 text-center border-2 border-dashed border-gray-300">
+                            <i class="fas fa-file-upload text-6xl text-gray-400 mb-4"></i>
+                            <h4 class="text-xl font-medium text-gray-900 mb-2">No hay organigramas</h4>
+                            <p class="text-gray-600 mb-6">Sube archivos de Visio, PDF o imágenes para mostrar los organigramas de {{ chart.department }}</p>
+                            <button onclick="showUploadModal()" 
+                                    class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-lg font-medium">
+                                <i class="fas fa-upload mr-2"></i>Subir Primer Organigrama
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Columna Derecha: Información del Departamento -->
+            <div class="space-y-6">
+                <!-- Personal del Departamento -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-users mr-2 text-blue-600"></i>Personal ({{ department_employees|length }})
+                    </h3>
+                    
+                    {% if department_employees %}
+                        <div class="space-y-3 max-h-64 overflow-y-auto">
+                            {% for employee in department_employees %}
+                                <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                    <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold mr-3">
+                                        {{ employee.first_name|first }}{{ employee.last_name|first }}
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="font-medium text-gray-900">{{ employee.first_name }} {{ employee.last_name }}</div>
+                                        <div class="text-sm text-gray-600">{{ employee.current_position.title|default:"Sin posición asignada" }}</div>
+                                        <div class="text-xs text-gray-500">ID: {{ employee.employee_id }}</div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="inline-block w-3 h-3 rounded-full {% if employee.current_position %}bg-green-500{% else %}bg-red-500{% endif %}"></span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-6 text-gray-500">
+                            <i class="fas fa-user-slash text-3xl mb-2"></i>
+                            <p>No hay personal asignado</p>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Posiciones del Departamento -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-briefcase mr-2 text-purple-600"></i>Posiciones ({{ department_positions|length }})
+                    </h3>
+                    
+                    {% if department_positions %}
+                        <div class="space-y-2 max-h-64 overflow-y-auto">
+                            {% for position in department_positions %}
+                                <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+                                    <div class="flex items-center">
+                                        <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white rounded-full mr-2
+                                            {% if position.level == 1 %}bg-purple-600
+                                            {% elif position.level == 2 %}bg-blue-600
+                                            {% elif position.level == 3 %}bg-green-600
+                                            {% elif position.level == 4 %}bg-yellow-600
+                                            {% elif position.level == 5 %}bg-orange-600
+                                            {% else %}bg-gray-600{% endif %}">
+                                            {{ position.level }}
+                                        </span>
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-900">{{ position.title }}</div>
+                                            {% if position.get_current_employee %}
+                                                <div class="text-xs text-green-700">{{ position.get_current_employee.first_name }} {{ position.get_current_employee.last_name }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <span class="inline-block w-2 h-2 rounded-full {% if position.is_vacant %}bg-red-500{% else %}bg-green-500{% endif %}"></span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-6 text-gray-500">
+                            <i class="fas fa-briefcase text-3xl mb-2"></i>
+                            <p>No hay posiciones definidas</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Información Adicional -->
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Metadatos -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-info-circle mr-2 text-blue-600"></i>Información
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Tipo:</span>
+                        <span class="font-medium">
+                            {% if chart.is_external %}Archivo Externo{% else %}Sistema{% endif %}
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Estado:</span>
+                        <span class="font-medium">{{ chart.get_status_display }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Creado:</span>
+                        <span class="font-medium">{{ chart.created_at|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Actualizado:</span>
+                        <span class="font-medium">{{ chart.updated_at|date:"d/m/Y" }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Resumen de Archivos -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-chart-bar mr-2 text-blue-600"></i>Resumen de Archivos
+                </h3>
+                
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                        <div class="flex items-center">
+                            <i class="fas fa-files-o text-blue-600 mr-3"></i>
+                            <span class="font-medium text-gray-900">Total Organigramas</span>
+                        </div>
+                        <span class="text-2xl font-bold text-blue-600">{{ all_versions|length }}</span>
+                    </div>
+                    
+                    {% if all_versions %}
+                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                            <div class="flex items-center">
+                                <i class="fas fa-star text-green-600 mr-3"></i>
+                                <span class="font-medium text-gray-900">Versión Activa</span>
+                            </div>
+                            <span class="text-lg font-bold text-green-600">
+                                {% for version in all_versions %}
+                                    {% if version.status == 'active' %}{{ forloop.counter }}{% endif %}
+                                {% endfor %}
+                            </span>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                            <div class="flex items-center">
+                                <i class="fas fa-clock text-purple-600 mr-3"></i>
+                                <span class="font-medium text-gray-900">Última Actualización</span>
+                            </div>
+                            <span class="text-sm font-medium text-purple-600">
+                                {{ all_versions.0.created_at|date:"d/m/Y" }}
+                            </span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Funciones del Departamento -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-tasks mr-2 text-green-600"></i>Funciones Principales
+                </h3>
+                <div class="space-y-2">
+                    {% if department_functions %}
+                        {% for function in department_functions %}
+                            <div class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mt-1 mr-2 text-xs"></i>
+                                <span class="text-sm text-gray-700">{{ function }}</span>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-sm text-gray-500">No hay funciones definidas para este departamento</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Acciones Rápidas -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-bolt mr-2 text-yellow-600"></i>Acciones
+                </h3>
+                <div class="space-y-2">
+                    <button onclick="exportChart()" 
+                            class="w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-sm">
+                        <i class="fas fa-file-pdf mr-2 text-red-500"></i>Exportar PDF
+                    </button>
+                    <button onclick="shareChart()" 
+                            class="w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-sm">
+                        <i class="fas fa-share mr-2 text-blue-500"></i>Compartir
+                    </button>
+                    <button onclick="duplicateChart()" 
+                            class="w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-sm">
+                        <i class="fas fa-copy mr-2 text-purple-500"></i>Duplicar
+                    </button>
+                    <button onclick="viewHistory()" 
+                            class="w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-sm">
+                        <i class="fas fa-history mr-2 text-gray-500"></i>Historial
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Subir Archivo -->
+<div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-upload mr-2 text-blue-600"></i>Subir Organigrama
+                    </h3>
+                    <button onclick="hideUploadModal()" class="text-gray-400 hover:text-red-500">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-lightbulb text-yellow-600 mr-2"></i>
+                        <p class="text-sm text-yellow-800">
+                            <strong>Recomendación:</strong> Crea tu organigrama en Visio, PowerPoint o cualquier programa y súbelo aquí. Es más fácil y rápido.
+                        </p>
+                    </div>
+                </div>
+                
+                <form onsubmit="uploadChart(event)">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Archivo</label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
+                            <input type="file" id="chartFile" accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.vsd,.vsdx,.svg,.ppt,.pptx" 
+                                   class="hidden" onchange="handleFileSelect(event)">
+                            <button type="button" onclick="document.getElementById('chartFile').click()" 
+                                    class="text-blue-600 hover:text-blue-700">
+                                <i class="fas fa-cloud-upload-alt text-5xl mb-4"></i>
+                                <p class="text-lg font-medium mb-2">Arrastra tu archivo aquí o haz click</p>
+                                <p class="text-sm text-gray-500">
+                                    <strong>Formatos soportados:</strong><br>
+                                    📄 PDF • 🖼️ PNG/JPG • 📈 Excel • 📄 Word<br>
+                                    📊 Visio (.vsd, .vsdx) • 🎨 PowerPoint • 🎨 SVG
+                                </p>
+                            </button>
+                            <div id="fileInfo" class="hidden mt-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-800"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Descripción (Opcional)</label>
+                        <textarea id="uploadDescription" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" 
+                                  rows="2" placeholder="Descripción del archivo..."></textarea>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button type="button" onclick="hideUploadModal()" 
+                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="uploadBtn"
+                                class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-upload mr-2"></i>Subir Archivo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Funciones del modal
+function showUploadModal() {
+    document.getElementById('uploadModal').classList.remove('hidden');
+}
+
+function hideUploadModal() {
+    document.getElementById('uploadModal').classList.add('hidden');
+    document.getElementById('chartFile').value = '';
+    document.getElementById('uploadDescription').value = '';
+    document.getElementById('fileInfo').classList.add('hidden');
+}
+
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    const fileInfo = document.getElementById('fileInfo');
+    
+    if (file) {
+        const fileSize = (file.size / 1024 / 1024).toFixed(2);
+        fileInfo.innerHTML = `
+            <i class="fas fa-file mr-2"></i>
+            <strong>${file.name}</strong> (${fileSize} MB)
+        `;
+        fileInfo.classList.remove('hidden');
+    }
+}
+
+// Subir archivo
+function uploadChart(event) {
+    event.preventDefault();
+    
+    const file = document.getElementById('chartFile').files[0];
+    const description = document.getElementById('uploadDescription').value;
+    
+    if (!file) {
+        alert('Por favor selecciona un archivo');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('chart_file', file);
+    formData.append('department', '{{ chart.department }}');
+    if (description) {
+        formData.append('description', description);
+    }
+    formData.append('department_id', '{{ chart.id }}'); // ID del departamento para agregar nueva versión
+    
+    const submitBtn = document.getElementById('uploadBtn');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Subiendo...';
+    submitBtn.disabled = true;
+    
+    fetch('/organizational/api/departmental/upload/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            hideUploadModal();
+            alert('✅ Archivo subido exitosamente');
+            location.reload();
+        } else {
+            alert('❌ Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Error al subir archivo');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+// Funciones principales
+function duplicateChart() {
+    if (confirm('¿Crear una copia de este organigrama?')) {
+        alert('🚧 Función en desarrollo');
+    }
+}
+
+function exportChart() {
+    alert('🚧 Exportación en desarrollo');
+}
+
+function shareChart() {
+    const url = window.location.href;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => {
+            alert('🔗 Enlace copiado al portapapeles');
+        });
+    } else {
+        prompt('Copia este enlace:', url);
+    }
+}
+
+function viewHistory() {
+    alert('🚧 Historial en desarrollo');
+}
+
+function activateVersion(versionId) {
+    if (confirm('¿Activar esta versión como la versión actual?')) {
+        fetch(`/organizational/api/departmental/${versionId}/activate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Versión activada exitosamente');
+                location.reload();
+            } else {
+                alert('❌ Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Error al activar versión');
+        });
+    }
+}
+
+// Función para eliminar archivo individual (solo administradores)
+function deleteVersion(versionId) {
+    if (confirm('⚠️ ¿Estás seguro de eliminar este archivo?\n\nEsta acción eliminará permanentemente esta versión del organigrama.\n\nEsta acción NO se puede deshacer.')) {
+        fetch(`/organizational/api/departmental/version/${versionId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Archivo eliminado exitosamente');
+                location.reload();
+            } else {
+                alert('❌ Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Error al eliminar archivo');
+        });
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Cerrar modal con Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideUploadModal();
+    }
+});
+</script>
+{% endblock %}

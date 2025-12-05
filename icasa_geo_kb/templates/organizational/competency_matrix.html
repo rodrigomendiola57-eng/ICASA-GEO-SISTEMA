@@ -1,0 +1,237 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}🎯 Matriz de Competencias - ICASA-GEO{% endblock %}
+{% block page_title %}🎯 Matriz de Competencias - Polivalencia{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold mb-2">🎯 Matriz de Competencias</h1>
+                <p class="text-purple-100">Visualización de habilidades y certificaciones por empleado</p>
+            </div>
+            <div class="text-right">
+                <p class="text-3xl font-bold">{{ matrix_data|length }}</p>
+                <p class="text-purple-100">Empleados evaluados</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leyenda de colores -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">📊 Leyenda de Estados</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="flex items-center">
+                <div class="w-4 h-4 bg-green-500 rounded mr-2"></div>
+                <span class="text-sm">✅ Certificado</span>
+            </div>
+            <div class="flex items-center">
+                <div class="w-4 h-4 bg-yellow-500 rounded mr-2"></div>
+                <span class="text-sm">🔄 En Capacitación</span>
+            </div>
+            <div class="flex items-center">
+                <div class="w-4 h-4 bg-red-500 rounded mr-2"></div>
+                <span class="text-sm">❌ Necesita Capacitación</span>
+            </div>
+            <div class="flex items-center">
+                <div class="w-4 h-4 bg-gray-300 rounded mr-2"></div>
+                <span class="text-sm">⚪ No Asignado</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">🔍 Filtros</h3>
+            <button onclick="exportMatrix()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors">
+                📊 Exportar Matriz
+            </button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <select id="categoryFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <option value="">Todas las categorías</option>
+                {% for category in skill_categories %}
+                <option value="{{ category }}">{{ category|title }}</option>
+                {% endfor %}
+            </select>
+            
+            <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <option value="">Todos los estados</option>
+                <option value="certified">Certificados</option>
+                <option value="training">En Capacitación</option>
+                <option value="needs_training">Necesita Capacitación</option>
+                <option value="not_assigned">No Asignado</option>
+            </select>
+            
+            <input type="text" 
+                   id="employeeSearch" 
+                   placeholder="Buscar empleado..." 
+                   class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+        </div>
+    </div>
+
+    <!-- Matriz de Competencias -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-6">📋 Matriz Empleados vs Habilidades</h3>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="sticky left-0 bg-gray-50 px-4 py-3 text-left text-sm font-medium text-gray-900 border-r">
+                            Empleado
+                        </th>
+                        {% for skill in skills %}
+                        <th class="px-2 py-3 text-center text-xs font-medium text-gray-900 border-r min-w-[80px]" 
+                            data-category="{{ skill.category }}"
+                            title="{{ skill.name }} ({{ skill.get_category_display }})">
+                            <div class="transform -rotate-45 origin-center">
+                                <span class="block text-xs">{{ skill.name|truncatechars:10 }}</span>
+                            </div>
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in matrix_data %}
+                    <tr class="border-b hover:bg-gray-50 employee-row" data-employee="{{ row.employee.first_name }} {{ row.employee.last_name }}">
+                        <td class="sticky left-0 bg-white px-4 py-3 border-r">
+                            <div class="flex items-center">
+                                {% if row.employee.photo %}
+                                    <img src="{{ row.employee.photo.url }}" alt="{{ row.employee.first_name }}" class="w-8 h-8 rounded-full mr-3">
+                                {% else %}
+                                    <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-3">
+                                        <span class="text-xs font-medium text-gray-600">{{ row.employee.first_name.0 }}{{ row.employee.last_name.0 }}</span>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">{{ row.employee.first_name }} {{ row.employee.last_name }}</p>
+                                    <p class="text-xs text-gray-600">{{ row.employee.employee_id }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        {% for skill in skills %}
+                        {% with skill_data=row.skills|default_if_none:skill.id %}
+                        <td class="px-2 py-3 text-center border-r skill-cell" 
+                            data-skill="{{ skill.id }}" 
+                            data-status="{{ skill_data.status|default:'not_assigned' }}"
+                            data-category="{{ skill.category }}">
+                            {% if skill.id in row.skills %}
+                                {% with emp_skill=row.skills|default:skill.id %}
+                                <div class="w-8 h-8 mx-auto rounded-full flex items-center justify-center text-white text-xs font-bold
+                                           {% if emp_skill.color == 'green' %}bg-green-500
+                                           {% elif emp_skill.color == 'yellow' %}bg-yellow-500
+                                           {% elif emp_skill.color == 'red' %}bg-red-500
+                                           {% else %}bg-gray-300{% endif %}"
+                                     title="{{ row.employee.first_name }} - {{ skill.name }}: Nivel {{ emp_skill.level|default:0 }} ({{ emp_skill.status|default:'No asignado' }})">
+                                    {{ emp_skill.level|default:0 }}
+                                </div>
+                                {% endwith %}
+                            {% else %}
+                                <div class="w-8 h-8 mx-auto rounded-full bg-gray-100 border-2 border-dashed border-gray-300"
+                                     title="{{ row.employee.first_name }} - {{ skill.name }}: No asignado">
+                                </div>
+                            {% endif %}
+                        </td>
+                        {% endwith %}
+                        {% endfor %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{{ skills.count|add:1 }}" class="text-center py-12">
+                            <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No hay datos de competencias</h3>
+                            <p class="text-gray-600">Comienza asignando habilidades a los empleados.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Estadísticas por habilidad -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">📈 Estadísticas por Habilidad</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {% for skill in skills|slice:":8" %}
+            <div class="border border-gray-200 rounded-lg p-4">
+                <h4 class="font-medium text-gray-900 mb-2">{{ skill.name }}</h4>
+                <div class="space-y-1">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-green-600">Certificados:</span>
+                        <span class="font-medium">0</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-yellow-600">En capacitación:</span>
+                        <span class="font-medium">0</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-red-600">Necesitan:</span>
+                        <span class="font-medium">0</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+function exportMatrix() {
+    // Función para exportar la matriz
+    alert('Funcionalidad de exportación en desarrollo');
+}
+
+// Filtros
+document.addEventListener('DOMContentLoaded', function() {
+    const categoryFilter = document.getElementById('categoryFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const employeeSearch = document.getElementById('employeeSearch');
+    
+    function applyFilters() {
+        const selectedCategory = categoryFilter.value;
+        const selectedStatus = statusFilter.value;
+        const searchTerm = employeeSearch.value.toLowerCase();
+        
+        // Filtrar columnas por categoría
+        document.querySelectorAll('th[data-category], td[data-category]').forEach(cell => {
+            const category = cell.getAttribute('data-category');
+            if (!selectedCategory || category === selectedCategory) {
+                cell.style.display = '';
+            } else {
+                cell.style.display = 'none';
+            }
+        });
+        
+        // Filtrar filas por empleado
+        document.querySelectorAll('.employee-row').forEach(row => {
+            const employeeName = row.getAttribute('data-employee').toLowerCase();
+            const matchesSearch = employeeName.includes(searchTerm);
+            
+            // Verificar si tiene el estado seleccionado
+            let hasStatus = true;
+            if (selectedStatus) {
+                const cells = row.querySelectorAll('.skill-cell[data-status]');
+                hasStatus = Array.from(cells).some(cell => 
+                    cell.getAttribute('data-status') === selectedStatus
+                );
+            }
+            
+            row.style.display = (matchesSearch && hasStatus) ? '' : 'none';
+        });
+    }
+    
+    categoryFilter.addEventListener('change', applyFilters);
+    statusFilter.addEventListener('change', applyFilters);
+    employeeSearch.addEventListener('input', applyFilters);
+});
+</script>
+{% endblock %}

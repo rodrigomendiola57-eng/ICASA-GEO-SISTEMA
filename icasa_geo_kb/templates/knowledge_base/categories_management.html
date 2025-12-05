@@ -1,0 +1,487 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Gestión de Categorías - Manual de Organización{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<style>
+.category-card { transition: all 0.3s ease; }
+.category-card:hover { transform: translateY(-2px); }
+.drag-handle { cursor: grab; }
+.drag-handle:active { cursor: grabbing; }
+.sortable-ghost { opacity: 0.4; }
+.category-examples { max-height: 200px; overflow-y: auto; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 shadow-sm">
+        <div class="px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 flex items-center">
+                        <i class="fas fa-sitemap text-blue-600 mr-3"></i>
+                        Gestión de Categorías
+                    </h1>
+                    <p class="text-gray-600 mt-1">Organiza la estructura del Manual de Organización ICASA</p>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <button onclick="showCreateModal()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Nueva Categoría
+                    </button>
+                    
+                    <button onclick="toggleView()" id="viewToggle" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-th-list mr-2"></i>Vista Lista
+                    </button>
+                    
+                    <button onclick="exportStructure()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                        <i class="fas fa-download mr-2"></i>Exportar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-6">
+        <!-- Estadísticas Rápidas -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-lg shadow-sm p-4">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-folder text-blue-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-gray-900">{{ total_categories }}</div>
+                        <div class="text-sm text-gray-600">Total Categorías</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-sm p-4">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-file-alt text-green-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-gray-900">{{ total_documents }}</div>
+                        <div class="text-sm text-gray-600">Total Documentos</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-sm p-4">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-layer-group text-yellow-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-gray-900">{{ max_depth }}</div>
+                        <div class="text-sm text-gray-600">Niveles Máximos</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-sm p-4">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-gray-900">{{ empty_categories }}</div>
+                        <div class="text-sm text-gray-600">Sin Documentos</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vista de Categorías -->
+        <div class="bg-white rounded-lg shadow-sm">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900">Estructura de Categorías</h3>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm text-gray-600">Arrastra para reordenar</span>
+                        <i class="fas fa-arrows-alt text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div id="categoriesGrid" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {% for category in main_categories %}
+                        <div class="category-card bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md" data-id="{{ category.id }}">
+                            <!-- Header de la Categoría -->
+                            <div class="p-4 border-b border-gray-100">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="drag-handle mr-3 text-gray-400 hover:text-gray-600">
+                                            <i class="fas fa-grip-vertical"></i>
+                                        </div>
+                                        <div class="w-10 h-10 rounded-lg flex items-center justify-center mr-3" 
+                                             style="background-color: {{ category.color }}20; color: {{ category.color }};">
+                                            <i class="{{ category.icon|default:'fas fa-folder' }}"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-semibold text-gray-900">{{ category.name }}</h4>
+                                            <p class="text-sm text-gray-600">{{ category.get_document_count }} documentos</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-center space-x-2">
+                                        <button onclick="editCategory({{ category.id }})" class="text-blue-600 hover:text-blue-800">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button onclick="deleteCategory({{ category.id }})" class="text-red-600 hover:text-red-800">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Descripción -->
+                            <div class="p-4">
+                                <p class="text-sm text-gray-700 mb-3">{{ category.description|truncatewords:20 }}</p>
+                                
+                                <!-- Ejemplos de Contenido -->
+                                <div class="mb-4">
+                                    <h5 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Ejemplos de Contenido:</h5>
+                                    <div class="category-examples">
+                                        {% if category.slug == 'informacion-corporativa' %}
+                                            <div class="space-y-1 text-xs text-gray-600">
+                                                <div class="flex items-center"><i class="fas fa-circle text-blue-500 mr-2" style="font-size: 4px;"></i>Misión, Visión y Valores</div>
+                                                <div class="flex items-center"><i class="fas fa-circle text-blue-500 mr-2" style="font-size: 4px;"></i>Historia de ICASA</div>
+                                                <div class="flex items-center"><i class="fas fa-circle text-blue-500 mr-2" style="font-size: 4px;"></i>Estructura Organizacional</div>
+                                                <div class="flex items-center"><i class="fas fa-circle text-blue-500 mr-2" style="font-size: 4px;"></i>Directorio Ejecutivo</div>
+                                            </div>
+                                        {% elif category.slug == 'marco-legal' %}
+                                            <div class="space-y-1 text-xs text-gray-600">
+                                                <div class="flex items-center"><i class="fas fa-circle text-red-500 mr-2" style="font-size: 4px;"></i>Ley de Seguros</div>
+                                                <div class="flex items-center"><i class="fas fa-circle text-red-500 mr-2" style="font-size: 4px;"></i>Normativas SUGESE</div>
+                                                <div class="flex items-center"><i class="fas fa-circle text-red-500 mr-2" style="font-size: 4px;"></i>Reglamentos Internos</div>
+                                                <div class="flex items-center"><i class="fas fa-circle text-red-500 mr-2" style="font-size: 4px;"></i>Código de Ética</div>
+                                            </div>
+                                        {% elif category.slug == 'politicas-organizacionales' %}
+                                            <div class="space-y-1 text-xs text-gray-600">
+                                                <div class="flex items-center"><i class="fas fa-circle text-green-500 mr-2" style="font-size: 4px;"></i>Política de Recursos Humanos</div>
+                                                <div class="flex items-center"><i class="fas fa-circle text-green-500 mr-2" style="font-size: 4px;"></i>Política de Seguridad</div>
+                                                <div class="flex items-center"><i class="fas fa-circle text-green-500 mr-2" style="font-size: 4px;"></i>Política de Calidad</div>
+                                                <div class="flex items-center"><i class="fas fa-circle text-green-500 mr-2" style="font-size: 4px;"></i>Política Ambiental</div>
+                                            </div>
+                                        {% elif category.slug == 'manuales' or category.slug == 'manuales-operativos' %}
+                                            <div class="space-y-1 text-xs text-gray-600">
+                                                <div class="flex items-center"><i class="fas fa-circle text-purple-500 mr-2" style="font-size: 4px;"></i>Manual de Suscripción</div>
+                                                <div class="flex items-center"><i class="fas fa-circle text-purple-500 mr-2" style="font-size: 4px;"></i>Manual de Siniestros</div>
+                                                <div class="flex items-center"><i class="fas fa-circle text-purple-500 mr-2" style="font-size: 4px;"></i>Manual de Calidad ISO 9001</div>
+                                                <div class="flex items-center"><i class="fas fa-circle text-purple-500 mr-2" style="font-size: 4px;"></i>Manual del Empleado</div>
+                                            </div>
+                                        {% elif category.slug == 'objetivos-estrategicos' %}
+                                            <div class="space-y-1 text-xs text-gray-600">
+                                                <div class="flex items-center"><i class="fas fa-circle text-yellow-500 mr-2" style="font-size: 4px;"></i>Plan Estratégico 2024-2026</div>
+                                                <div class="flex items-center"><i class="fas fa-circle text-yellow-500 mr-2" style="font-size: 4px;"></i>KPIs Corporativos</div>
+                                                <div class="flex items-center"><i class="fas fa-circle text-yellow-500 mr-2" style="font-size: 4px;"></i>Objetivos por Departamento</div>
+                                                <div class="flex items-center"><i class="fas fa-circle text-yellow-500 mr-2" style="font-size: 4px;"></i>Metas de Crecimiento</div>
+                                            </div>
+                                        {% else %}
+                                            <div class="space-y-1 text-xs text-gray-600">
+                                                <div class="flex items-center"><i class="fas fa-circle text-gray-400 mr-2" style="font-size: 4px;"></i>Documentos generales</div>
+                                                <div class="flex items-center"><i class="fas fa-circle text-gray-400 mr-2" style="font-size: 4px;"></i>Procedimientos específicos</div>
+                                                <div class="flex items-center"><i class="fas fa-circle text-gray-400 mr-2" style="font-size: 4px;"></i>Formularios y plantillas</div>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Subcategorías -->
+                                {% if category.children.all %}
+                                    <div class="mb-4">
+                                        <h5 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Subcategorías ({{ category.children.count }}):</h5>
+                                        <div class="flex flex-wrap gap-1">
+                                            {% for child in category.children.all|slice:":4" %}
+                                                <span class="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">{{ child.name }}</span>
+                                            {% endfor %}
+                                            {% if category.children.count > 4 %}
+                                                <span class="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">+{{ category.children.count|add:"-4" }} más</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                
+                                <!-- Acciones -->
+                                <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+                                    <div class="flex items-center space-x-3">
+                                        <button onclick="viewCategory('{{ category.slug }}')" class="text-sm text-blue-600 hover:text-blue-800">
+                                            <i class="fas fa-eye mr-1"></i>Ver
+                                        </button>
+                                        <button onclick="addDocument('{{ category.slug }}')" class="text-sm text-green-600 hover:text-green-800">
+                                            <i class="fas fa-plus mr-1"></i>Documento
+                                        </button>
+                                        <button onclick="showCreateSubcategoryModal({{ category.id }}, '{{ category.name }}')" class="text-sm text-green-600 hover:text-green-800">
+                                            <i class="fas fa-folder-plus mr-1"></i>Crear Subcategoría
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="text-xs text-gray-500">
+                                        {{ category.updated_at|date:"d/m/Y" }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="col-span-full text-center py-12">
+                            <i class="fas fa-folder-open text-6xl text-gray-300 mb-4"></i>
+                            <h3 class="text-xl font-semibold text-gray-900 mb-2">No hay categorías</h3>
+                            <p class="text-gray-600 mb-6">Comienza creando la primera categoría del manual</p>
+                            <button onclick="showCreateModal()" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                                <i class="fas fa-plus mr-2"></i>Crear Primera Categoría
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Crear/Editar Categoría -->
+<div id="categoryModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between p-6 border-b">
+            <h3 id="modalTitle" class="text-lg font-semibold text-gray-900">Nueva Categoría</h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="categoryForm" class="p-6 space-y-4">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de la Categoría</label>
+                    <input type="text" id="categoryName" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                           placeholder="Ej: Políticas de Recursos Humanos">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Categoría Padre</label>
+                    <select id="categoryParent" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="">Categoría Principal</option>
+                        {% for category in all_categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                <textarea id="categoryDescription" rows="3"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          placeholder="Describe qué tipo de documentos contendrá esta categoría..."></textarea>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Icono</label>
+                    <div class="flex items-center space-x-2">
+                        <select id="categoryIcon" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="fas fa-folder">📁 Carpeta</option>
+                            <option value="fas fa-shield-alt">🛡️ Seguridad</option>
+                            <option value="fas fa-users">👥 Personas</option>
+                            <option value="fas fa-cogs">⚙️ Procesos</option>
+                            <option value="fas fa-chart-line">📈 Estrategia</option>
+                            <option value="fas fa-balance-scale">⚖️ Legal</option>
+                            <option value="fas fa-book">📚 Manual</option>
+                            <option value="fas fa-clipboard-list">📋 Procedimientos</option>
+                        </select>
+                        <div id="iconPreview" class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-folder text-gray-600"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="color" id="categoryColor" value="#007bff"
+                               class="w-12 h-10 border border-gray-300 rounded-lg">
+                        <input type="text" id="categoryColorText" value="#007bff"
+                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-end space-x-3 pt-4 border-t">
+                <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
+                    Cancelar
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <i class="fas fa-save mr-2"></i>Guardar Categoría
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Inicializar Sortable para drag & drop
+new Sortable(document.getElementById('categoriesGrid'), {
+    handle: '.drag-handle',
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    onEnd: function(evt) {
+        // Actualizar orden en el servidor
+        updateCategoryOrder();
+    }
+});
+
+// Funciones de gestión
+function showCreateModal() {
+    document.getElementById('modalTitle').textContent = 'Nueva Categoría';
+    document.getElementById('categoryForm').reset();
+    document.getElementById('categoryModal').classList.remove('hidden');
+}
+
+function editCategory(id) {
+    document.getElementById('modalTitle').textContent = 'Editar Categoría';
+    // Cargar datos de la categoría
+    document.getElementById('categoryModal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('categoryModal').classList.add('hidden');
+}
+
+function deleteCategory(id) {
+    if (confirm('¿Está seguro de eliminar esta categoría? Esta acción no se puede deshacer.')) {
+        // Implementar eliminación
+        alert('🗑️ Categoría eliminada');
+    }
+}
+
+function viewCategory(slug) {
+    window.location.href = `/manual/category/${slug}/`;
+}
+
+function addDocument(categorySlug) {
+    window.location.href = `/manual/create/?category=${categorySlug}`;
+}
+
+function showCreateSubcategoryModal(parentId, parentName) {
+    document.getElementById('modalTitle').textContent = `Nueva Subcategoría de "${parentName}"`;
+    document.getElementById('categoryParent').value = parentId;
+    
+    // Pre-llenar algunos campos para subcategorías
+    const parentCategory = document.querySelector(`[data-id="${parentId}"]`);
+    if (parentCategory) {
+        const parentIcon = parentCategory.querySelector('i').className;
+        const parentColor = parentCategory.querySelector('.w-10').style.color;
+        
+        document.getElementById('categoryIcon').value = parentIcon;
+        if (parentColor) {
+            document.getElementById('categoryColor').value = parentColor;
+            document.getElementById('categoryColorText').value = parentColor;
+        }
+    }
+    
+    document.getElementById('categoryModal').classList.remove('hidden');
+}
+
+function addSubcategory(parentId) {
+    // Mantener función original para compatibilidad
+    showCreateSubcategoryModal(parentId, 'Categoría');
+}
+
+function updateCategoryOrder() {
+    // Implementar actualización de orden
+    console.log('Actualizando orden de categorías...');
+}
+
+function toggleView() {
+    // Alternar entre vista grid y lista
+    const grid = document.getElementById('categoriesGrid');
+    const toggle = document.getElementById('viewToggle');
+    
+    if (grid.classList.contains('grid-cols-1')) {
+        grid.className = 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6';
+        toggle.innerHTML = '<i class="fas fa-th-list mr-2"></i>Vista Lista';
+    } else {
+        grid.className = 'grid grid-cols-1 gap-4';
+        toggle.innerHTML = '<i class="fas fa-th mr-2"></i>Vista Grid';
+    }
+}
+
+function exportStructure() {
+    alert('📊 Exportando estructura de categorías...');
+}
+
+// Actualizar preview del icono
+document.getElementById('categoryIcon').addEventListener('change', function() {
+    const preview = document.getElementById('iconPreview');
+    const icon = preview.querySelector('i');
+    icon.className = this.value + ' text-gray-600';
+});
+
+// Sincronizar color
+document.getElementById('categoryColor').addEventListener('change', function() {
+    document.getElementById('categoryColorText').value = this.value;
+});
+
+document.getElementById('categoryColorText').addEventListener('change', function() {
+    document.getElementById('categoryColor').value = this.value;
+});
+
+// Enviar formulario
+document.getElementById('categoryForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    formData.append('name', document.getElementById('categoryName').value);
+    formData.append('parent', document.getElementById('categoryParent').value);
+    formData.append('description', document.getElementById('categoryDescription').value);
+    formData.append('icon', document.getElementById('categoryIcon').value);
+    formData.append('color', document.getElementById('categoryColor').value);
+    
+    // Agregar CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrfToken) {
+        formData.append('csrfmiddlewaretoken', csrfToken.value);
+    }
+    
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
+    submitBtn.disabled = true;
+    
+    fetch('/manual/categories/create/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ ' + data.message);
+            closeModal();
+            location.reload();
+        } else {
+            alert('❌ Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Error de conexión. Inténtalo de nuevo.');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+</script>
+{% endblock %}

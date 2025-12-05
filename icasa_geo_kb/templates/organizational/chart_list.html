@@ -1,0 +1,84 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Organigramas - ICASA-GEO{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-sitemap text-success me-2"></i>Organigramas</h2>
+                <button class="btn btn-success">
+                    <i class="fas fa-plus me-1"></i>Nuevo Organigrama
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    {% if charts %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Estado</th>
+                                        <th>Principal</th>
+                                        <th>Creado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for chart in charts %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ chart.name }}</strong>
+                                            {% if chart.description %}
+                                                <br><small class="text-muted">{{ chart.description|truncatechars:50 }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if chart.status == 'approved' %}
+                                                <span class="badge bg-success">Aprobado</span>
+                                            {% elif chart.status == 'review' %}
+                                                <span class="badge bg-warning">En Revisión</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Borrador</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if chart.is_main %}
+                                                <i class="fas fa-star text-warning"></i>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ chart.created_at|date:"d/m/Y" }}</td>
+                                        <td>
+                                            <a href="{% url 'organizational:chart_detail' chart.pk %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-sitemap fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No hay organigramas creados</h5>
+                            <p class="text-muted">Crea tu primer organigrama para comenzar</p>
+                            <button class="btn btn-success">
+                                <i class="fas fa-plus me-1"></i>Crear Organigrama
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

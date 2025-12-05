@@ -1,0 +1,92 @@
+graph TD
+    %% DEFINICIÓN DE CLASES (COLORES)
+    classDef comercial fill:#D5F5E3,stroke:#2ECC71,stroke-width:2px,color:black;
+    classDef trafico fill:#D6EAF8,stroke:#3498DB,stroke-width:2px,color:black;
+    classDef taller fill:#FAD7A0,stroke:#F39C12,stroke-width:2px,color:black;
+    classDef admin fill:#F2D7D5,stroke:#C0392B,stroke-width:2px,color:black;
+    classDef ruta fill:#EAEDED,stroke:#7F8C8D,stroke-width:2px,stroke-dasharray: 5 5,color:black;
+
+    %% --- DEPARTAMENTO COMERCIAL ---
+    subgraph COM ["1. COMERCIAL Y VENTAS"]
+        A([Solicitud de Cliente]):::comercial --> B{¿Cliente con Crédito?}:::comercial
+        B -->|No| B1[Solicitar Pago Anticipado]:::comercial
+        B -->|Sí| C[Generar Orden de Carga]:::comercial
+    end
+
+    %% --- DEPARTAMENTO TRÁFICO Y MANTENIMIENTO ---
+    subgraph OPS ["2. TRÁFICO Y FLOTA"]
+        D[Asignación de Recurso: Unidad + Remolque + Chofer]:::trafico
+        E[Solicitud de Inspección Pre-Viaje]:::trafico
+        F{¿Unidad Apta?}:::taller
+        F1[Ingreso a Taller / Correctivo]:::taller
+        G[Autorización de Salida]:::taller
+        
+        D --> E
+        E --> F
+        F -->|NO| F1
+        F1 --> D
+        F -->|SÍ| G
+    end
+
+    %% --- DEPARTAMENTO ADMINISTRACIÓN (PRE-VIAJE) ---
+    subgraph ADM_PRE ["3. GESTIÓN DOCUMENTAL Y GASTOS"]
+        H[Emisión Carta Porte con Complemento]:::admin
+        I[Cálculo de Anticipo de Gastos]:::admin
+        J[Dispersión de Fondos a Chofer]:::admin
+        
+        H --> I
+        I --> J
+    end
+
+    %% --- OPERACIÓN EN CAMPO ---
+    subgraph RUTA ["4. EJECUCIÓN Y RUTA"]
+        K[Salida a Planta Cliente]:::ruta
+        L[Carga y Trincado]:::ruta
+        M[Inicio de Viaje]:::ruta
+        N{¿Incidencia en Ruta?}:::trafico
+        N1[Auxilio Vial / Transbordo]:::trafico
+        N2[Protocolo Aseguradora]:::trafico
+        O[Arribo a Destino]:::ruta
+        P[Maniobra de Descarga]:::ruta
+        Q[Firma de POD y Sellos]:::ruta
+        
+        K --> L
+        L --> M
+        M --> N
+        N -->|Falla Mecánica| N1
+        N -->|Siniestro/Robo| N2
+        N -->|Todo OK| O
+        N1 --> O
+        O --> P
+        P --> Q
+    end
+
+    %% --- CIERRE ADMINISTRATIVO ---
+    subgraph CIERRE ["5. LIQUIDACIÓN Y FACTURACIÓN"]
+        R[Retorno de Unidad a Base]:::trafico
+        S[Revisión de Evidencias POD]:::admin
+        T[Facturación al Cliente]:::admin
+        U([Cobranza Final]):::comercial
+        V[Revisión de Rendimiento de Diésel]:::trafico
+        W{¿Rendimiento OK?}:::trafico
+        W1[Descuento por bajo rendimiento]:::admin
+        X[Cálculo de Liquidación Chofer]:::admin
+        Y([Pago de Nómina/Comisión]):::admin
+        
+        R --> S
+        S --> T
+        T --> U
+        R --> V
+        V --> W
+        W -->|No| W1
+        W -->|Sí| X
+        W1 --> X
+        X --> Y
+    end
+
+    %% CONEXIONES ENTRE SUBGRAFOS
+    C --> D
+    G --> H
+    J --> K
+    Q --> R
+    B1 --> C

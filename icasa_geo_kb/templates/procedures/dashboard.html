@@ -1,0 +1,207 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Gestión de Procedimientos - ICASA GEO{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Gestión de Procedimientos</h1>
+                <p class="text-sm text-gray-500">Control y seguimiento de procedimientos organizacionales</p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <a href="{% url 'procedures:procedure_create' %}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Nuevo Procedimiento
+                </a>
+                <a href="{% url 'procedures:procedure_list' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-list mr-2"></i>Ver Todos
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-6">
+        <!-- Alertas Críticas -->
+        {% if critical_alerts %}
+        <div class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-3">
+                <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>Alertas Críticas
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {% for alert in critical_alerts %}
+                <div class="bg-white rounded-lg border-l-4 {% if alert.type == 'danger' %}border-red-500{% elif alert.type == 'warning' %}border-yellow-500{% else %}border-blue-500{% endif %} p-4 shadow-sm">
+                    <div class="flex items-center">
+                        <i class="{{ alert.icon }} {% if alert.type == 'danger' %}text-red-500{% elif alert.type == 'warning' %}text-yellow-500{% else %}text-blue-500{% endif %} text-xl mr-3"></i>
+                        <div>
+                            <h3 class="font-semibold text-gray-900">{{ alert.title }}</h3>
+                            <p class="text-sm text-gray-600">{{ alert.message }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Estadísticas Principales -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                <div class="flex items-center">
+                    <div class="p-3 bg-blue-100 rounded-lg">
+                        <i class="fas fa-file-alt text-blue-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-gray-500">Total Procedimientos</h3>
+                        <p class="text-2xl font-bold text-gray-900">{{ total_procedures }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                <div class="flex items-center">
+                    <div class="p-3 bg-green-100 rounded-lg">
+                        <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-gray-500">Publicados</h3>
+                        <p class="text-2xl font-bold text-gray-900">{{ published_procedures }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                <div class="flex items-center">
+                    <div class="p-3 bg-yellow-100 rounded-lg">
+                        <i class="fas fa-edit text-yellow-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-gray-500">En Borrador</h3>
+                        <p class="text-2xl font-bold text-gray-900">{{ draft_procedures }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                <div class="flex items-center">
+                    <div class="p-3 bg-red-100 rounded-lg">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-gray-500">Vencidos</h3>
+                        <p class="text-2xl font-bold text-gray-900">{{ expired_procedures }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Procedimientos por Categoría -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">Procedimientos por Categoría</h3>
+                    </div>
+                    <div class="p-6">
+                        {% if procedures_by_category %}
+                            <div class="space-y-4">
+                                {% for item in procedures_by_category %}
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="w-4 h-4 rounded-full mr-3" style="background-color: {{ item.category__color }}"></div>
+                                        <span class="text-sm font-medium text-gray-900">{{ item.category__name }}</span>
+                                    </div>
+                                    <span class="text-sm text-gray-500">{{ item.count }} procedimientos</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-gray-500 text-center py-8">No hay datos disponibles</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Plantillas Populares -->
+            <div>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">Plantillas Populares</h3>
+                    </div>
+                    <div class="p-6">
+                        {% if popular_templates %}
+                            <div class="space-y-3">
+                                {% for template in popular_templates %}
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div>
+                                        <h4 class="text-sm font-medium text-gray-900">{{ template.name }}</h4>
+                                        <p class="text-xs text-gray-500">{{ template.category.name }}</p>
+                                    </div>
+                                    <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">{{ template.usage_count }} usos</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-gray-500 text-center py-8">No hay plantillas disponibles</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Procedimientos Recientes -->
+        <div class="mt-8">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900">Procedimientos Recientes</h3>
+                    <a href="{% url 'procedures:procedure_list' %}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">Ver todos</a>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Título</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departamento</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actualizado</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for procedure in recent_procedures %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    <a href="{% url 'procedures:procedure_detail' procedure.pk %}" class="text-blue-600 hover:text-blue-800">
+                                        {{ procedure.code }}
+                                    </a>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ procedure.title|truncatechars:50 }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ procedure.category.name }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ procedure.department }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        {% if procedure.status == 'published' %}bg-green-100 text-green-800
+                                        {% elif procedure.status == 'draft' %}bg-gray-100 text-gray-800
+                                        {% elif procedure.status == 'review' %}bg-yellow-100 text-yellow-800
+                                        {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                        {{ procedure.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ procedure.updated_at|date:"d/m/Y" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="px-6 py-4 text-center text-gray-500">No hay procedimientos recientes</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

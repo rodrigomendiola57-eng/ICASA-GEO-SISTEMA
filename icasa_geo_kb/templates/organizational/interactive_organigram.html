@@ -1,0 +1,996 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Organigrama Interactivo - ICASA GEO{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.org-chart {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+    background: linear-gradient(45deg, #f8fafc 25%, transparent 25%), 
+                linear-gradient(-45deg, #f8fafc 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #f8fafc 75%), 
+                linear-gradient(-45deg, transparent 75%, #f8fafc 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
+.org-node {
+    position: absolute;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px;
+    min-width: 200px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.org-node:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: #3b82f6;
+}
+
+.org-node.vacant {
+    border-color: #ef4444;
+    background: #fef2f2;
+}
+
+.org-node.filled {
+    border-color: #10b981;
+}
+
+.org-line {
+    position: absolute;
+    background: #94a3b8;
+    z-index: 1;
+}
+
+.employee-photo {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e2e8f0;
+}
+
+.position-title {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 4px;
+}
+
+.employee-name {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.department-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 8px;
+}
+
+.dept-administrativo { background: #dbeafe; color: #1e40af; }
+.dept-comercial { background: #d1fae5; color: #065f46; }
+.dept-operaciones { background: #e0e7ff; color: #3730a3; }
+.dept-rrhh { background: #fce7f3; color: #be185d; }
+.dept-finanzas { background: #fef3c7; color: #92400e; }
+.dept-mantenimiento { background: #fee2e2; color: #991b1b; }
+.dept-direccion { background: #f3e8ff; color: #6b21a8; }
+
+.org-controls {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 20;
+    display: flex;
+    gap: 8px;
+}
+
+.control-btn {
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.control-btn:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+}
+
+.zoom-controls {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.zoom-btn {
+    width: 40px;
+    height: 40px;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.zoom-btn:hover {
+    background: #f9fafb;
+}
+
+.loading-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f4f6;
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="h-screen flex flex-col">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 p-4 flex-shrink-0">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">
+                    <i class="fas fa-sitemap text-blue-600"></i> Organigrama Interactivo
+                </h1>
+                <p class="text-gray-600">Vista jerárquica de la estructura organizacional de ICASA</p>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <div id="stats-container" class="flex items-center space-x-4">
+                    {% if not error_message %}
+                        <div class="bg-blue-50 px-4 py-2 rounded-lg">
+                            <span class="text-sm font-medium text-blue-800" id="total-positions">{{ total_positions }} Posiciones</span>
+                        </div>
+                        <div class="bg-red-50 px-4 py-2 rounded-lg">
+                            <span class="text-sm font-medium text-red-800" id="vacant-count">{{ vacant_count }} Vacantes</span>
+                        </div>
+                        <div class="bg-green-50 px-4 py-2 rounded-lg">
+                            <span class="text-sm font-medium text-green-800" id="fill-rate">{{ fill_rate }}% Ocupación</span>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <!-- Búsqueda -->
+                    <input type="text" id="search-input" placeholder="Buscar empleado o puesto..." 
+                           class="px-3 py-2 border border-gray-300 rounded-lg text-sm w-48"
+                           onkeyup="searchEmployees(this.value)">
+                    
+                    <!-- Filtro por departamento -->
+                    <select id="department-filter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <option value="">Todos los departamentos</option>
+                    </select>
+                    
+                    <!-- Exportar -->
+                    <button onclick="exportToPNG()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors" title="Exportar a PNG">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    
+                    <!-- Historial -->
+                    <button onclick="showVersionHistory()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors" title="Ver historial">
+                        <i class="fas fa-history"></i>
+                    </button>
+                    
+                    {% if can_edit %}
+                        <button id="edit-mode-btn" class="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                    {% endif %}
+                    
+                    <a href="{% url 'organizational:demo_dashboard' %}" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-th-large"></i> Demo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="flex-1 overflow-hidden relative">
+        {% if error_message %}
+            <div class="h-full flex items-center justify-center bg-gray-50">
+                <div class="text-center max-w-md">
+                    <div class="bg-yellow-100 rounded-full p-6 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-yellow-600 text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">Organigrama no Disponible</h3>
+                    <p class="text-gray-600 mb-6">{{ error_message }}</p>
+                    <div class="space-y-3">
+                        {% if show_create_button %}
+                            <a href="/admin/organizational/position/add/" class="block bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                                <i class="fas fa-plus mr-2"></i> Crear Primera Posición
+                            </a>
+                        {% endif %}
+                        <a href="{% url 'organizational:demo_dashboard' %}" class="block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-eye mr-2"></i> Ver Demostración
+                        </a>
+                        <a href="/admin/" class="block bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors">
+                            <i class="fas fa-cog mr-2"></i> Administrar Sistema
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <!-- Organigrama Container -->
+            <div id="org-chart" class="org-chart">
+                <!-- Loading -->
+                <div id="loading" class="loading-spinner">
+                    <div class="text-center">
+                        <div class="spinner mx-auto mb-4"></div>
+                        <p class="text-gray-600">Cargando organigrama...</p>
+                    </div>
+                </div>
+                
+                <!-- Controles -->
+                <div class="org-controls">
+                    <button class="control-btn" id="help-btn" title="Ayuda y atajos (?)">
+                        <i class="fas fa-question"></i>
+                    </button>
+                    <button class="control-btn" id="center-btn" title="Centrar vista">
+                        <i class="fas fa-crosshairs"></i>
+                    </button>
+                    <button class="control-btn" id="fullscreen-btn" title="Pantalla completa">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                    <button class="control-btn" id="refresh-btn" title="Actualizar (Ctrl+R)">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                
+                <!-- Zoom Controls -->
+                <div class="zoom-controls">
+                    <button class="zoom-btn" id="zoom-in" title="Acercar">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="zoom-btn" id="zoom-out" title="Alejar">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <button class="zoom-btn" id="zoom-reset" title="Zoom 100%">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal para detalles de posición -->
+<div id="position-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900" id="modal-title">Detalles de Posición</h3>
+                    <button id="close-modal" class="text-gray-400 hover:text-red-500">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="modal-content">
+                    <!-- Contenido dinámico -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de ayuda -->
+<div id="help-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-keyboard text-blue-600 mr-2"></i>
+                        Atajos de Teclado y Ayuda
+                    </h3>
+                    <button id="close-help-modal" class="text-gray-400 hover:text-red-500">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-semibold text-gray-800 mb-2">Navegación</h4>
+                        <div class="space-y-1 text-sm">
+                            <div class="flex justify-between">
+                                <span>Buscar empleado/puesto:</span>
+                                <kbd class="px-2 py-1 bg-gray-100 rounded">Ctrl + F</kbd>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Limpiar búsqueda:</span>
+                                <kbd class="px-2 py-1 bg-gray-100 rounded">Escape</kbd>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Actualizar datos:</span>
+                                <kbd class="px-2 py-1 bg-gray-100 rounded">Ctrl + R</kbd>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-semibold text-gray-800 mb-2">Zoom y Vista</h4>
+                        <div class="space-y-1 text-sm">
+                            <div class="flex justify-between">
+                                <span>Acercar:</span>
+                                <kbd class="px-2 py-1 bg-gray-100 rounded">+</kbd>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Alejar:</span>
+                                <kbd class="px-2 py-1 bg-gray-100 rounded">-</kbd>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Zoom 100%:</span>
+                                <kbd class="px-2 py-1 bg-gray-100 rounded">0</kbd>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-semibold text-gray-800 mb-2">Acciones</h4>
+                        <div class="space-y-1 text-sm">
+                            <div class="flex justify-between">
+                                <span>Exportar a PNG:</span>
+                                <kbd class="px-2 py-1 bg-gray-100 rounded">Ctrl + E</kbd>
+                            </div>
+                            {% if can_edit %}
+                            <div class="flex justify-between">
+                                <span>Mover posiciones:</span>
+                                <span class="text-gray-600">Arrastra con el mouse</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <h4 class="font-semibold text-blue-800 mb-1">Funcionalidades</h4>
+                        <ul class="text-sm text-blue-700 space-y-1">
+                            <li>• Click en cualquier posición para ver detalles</li>
+                            <li>• Filtra por departamento usando el selector</li>
+                            <li>• Busca empleados o puestos en tiempo real</li>
+                            {% if can_edit %}
+                            <li>• Arrastra posiciones para reorganizar</li>
+                            {% endif %}
+                            <li>• Exporta el organigrama como imagen PNG</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="flex justify-end pt-4">
+                        <button onclick="closeHelpModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            Entendido
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables globales
+let orgData = [];
+let currentZoom = 1;
+let panX = 0;
+let panY = 0;
+let isDragging = false;
+let editMode = false;
+
+// Inicializar organigrama
+document.addEventListener('DOMContentLoaded', function() {
+    {% if not error_message %}
+        loadOrganigramData();
+        setupKeyboardShortcuts();
+    {% endif %}
+});
+
+// Configurar atajos de teclado
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + F para enfocar búsqueda
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            document.getElementById('search-input').focus();
+        }
+        
+        // Escape para limpiar búsqueda
+        if (e.key === 'Escape') {
+            const searchInput = document.getElementById('search-input');
+            if (searchInput.value) {
+                searchInput.value = '';
+                searchEmployees('');
+            } else {
+                closeModal();
+            }
+        }
+        
+        // Ctrl/Cmd + E para exportar
+        if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+            e.preventDefault();
+            exportToPNG();
+        }
+        
+        // Ctrl/Cmd + R para actualizar
+        if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+            e.preventDefault();
+            loadOrganigramData();
+        }
+        
+        // + y - para zoom
+        if (e.key === '+' || e.key === '=') {
+            e.preventDefault();
+            document.getElementById('zoom-in').click();
+        }
+        if (e.key === '-') {
+            e.preventDefault();
+            document.getElementById('zoom-out').click();
+        }
+        
+        // 0 para resetear zoom
+        if (e.key === '0') {
+            e.preventDefault();
+            document.getElementById('zoom-reset').click();
+        }
+    });
+}
+
+// Cargar datos del organigrama
+function loadOrganigramData() {
+    fetch('/organizational/api/organigram-data/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                orgData = data.positions;
+                updateStats(data.stats);
+                populateDepartmentFilter(data.departments);
+                renderOrganigram();
+                document.getElementById('loading').style.display = 'none';
+            } else {
+                showError('Error al cargar datos: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('Error de conexión al cargar el organigrama');
+        });
+}
+
+// Actualizar estadísticas
+function updateStats(stats) {
+    document.getElementById('total-positions').textContent = stats.total_positions + ' Posiciones';
+    document.getElementById('vacant-count').textContent = stats.vacant_positions + ' Vacantes';
+    document.getElementById('fill-rate').textContent = stats.fill_rate + '% Ocupación';
+}
+
+// Poblar filtro de departamentos
+function populateDepartmentFilter(departments) {
+    const select = document.getElementById('department-filter');
+    departments.forEach(dept => {
+        const option = document.createElement('option');
+        option.value = dept;
+        option.textContent = dept;
+        select.appendChild(option);
+    });
+}
+
+// Renderizar organigrama
+function renderOrganigram() {
+    const container = document.getElementById('org-chart');
+    
+    // Limpiar contenido anterior (excepto controles)
+    const nodes = container.querySelectorAll('.org-node, .org-line');
+    nodes.forEach(node => node.remove());
+    
+    // Renderizar líneas de conexión
+    renderConnections();
+    
+    // Renderizar nodos
+    orgData.forEach(position => {
+        renderNode(position);
+    });
+    
+    // Centrar vista
+    centerView();
+}
+
+// Renderizar nodo de posición
+function renderNode(position) {
+    const container = document.getElementById('org-chart');
+    const node = document.createElement('div');
+    
+    node.className = `org-node ${position.is_vacant ? 'vacant' : 'filled'}`;
+    node.style.left = position.x_position + 'px';
+    node.style.top = position.y_position + 'px';
+    node.dataset.positionId = position.id;
+    
+    const deptClass = 'dept-' + position.department.toLowerCase().replace(/\s+/g, '');
+    
+    node.innerHTML = `
+        <div class="flex items-start space-x-3">
+            <div class="flex-shrink-0">
+                ${position.employee && position.employee.photo ? 
+                    `<img src="${position.employee.photo}" alt="${position.employee.name}" class="employee-photo">` :
+                    `<div class="employee-photo bg-gray-200 flex items-center justify-center">
+                        <i class="fas fa-user text-gray-400"></i>
+                    </div>`
+                }
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="position-title">${position.title}</div>
+                <div class="employee-name">
+                    ${position.employee ? position.employee.name : 'VACANTE'}
+                </div>
+                <div class="department-badge ${deptClass}">
+                    ${position.department}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Event listeners
+    node.addEventListener('click', () => showPositionDetails(position));
+    
+    // Hacer draggable para administradores
+    {% if can_edit %}
+        makeDraggable(node, position);
+    {% endif %}
+    
+    container.appendChild(node);
+}
+
+// Renderizar conexiones
+function renderConnections() {
+    const container = document.getElementById('org-chart');
+    
+    orgData.forEach(position => {
+        if (position.reports_to) {
+            const parent = orgData.find(p => p.id === position.reports_to);
+            if (parent) {
+                drawConnection(parent, position, container);
+            }
+        }
+    });
+}
+
+// Dibujar conexión entre dos posiciones
+function drawConnection(parent, child, container) {
+    const parentX = parent.x_position + 100; // Centro del nodo padre
+    const parentY = parent.y_position + 80;  // Parte inferior del nodo padre
+    const childX = child.x_position + 100;   // Centro del nodo hijo
+    const childY = child.y_position;         // Parte superior del nodo hijo
+    
+    // Línea vertical desde el padre
+    const vLine = document.createElement('div');
+    vLine.className = 'org-line';
+    vLine.style.left = parentX + 'px';
+    vLine.style.top = parentY + 'px';
+    vLine.style.width = '2px';
+    vLine.style.height = Math.abs(childY - parentY) / 2 + 'px';
+    container.appendChild(vLine);
+    
+    // Línea horizontal
+    const hLine = document.createElement('div');
+    hLine.className = 'org-line';
+    const hLineY = parentY + Math.abs(childY - parentY) / 2;
+    hLine.style.left = Math.min(parentX, childX) + 'px';
+    hLine.style.top = hLineY + 'px';
+    hLine.style.width = Math.abs(childX - parentX) + 'px';
+    hLine.style.height = '2px';
+    container.appendChild(hLine);
+    
+    // Línea vertical hacia el hijo
+    const vLine2 = document.createElement('div');
+    vLine2.className = 'org-line';
+    vLine2.style.left = childX + 'px';
+    vLine2.style.top = hLineY + 'px';
+    vLine2.style.width = '2px';
+    vLine2.style.height = Math.abs(childY - hLineY) + 'px';
+    container.appendChild(vLine2);
+}
+
+// Mostrar detalles de posición
+function showPositionDetails(position) {
+    const modal = document.getElementById('position-modal');
+    const title = document.getElementById('modal-title');
+    const content = document.getElementById('modal-content');
+    
+    title.textContent = position.title;
+    
+    content.innerHTML = `
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Departamento</label>
+                <p class="text-gray-900">${position.department}</p>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Nivel Jerárquico</label>
+                <p class="text-gray-900">Nivel ${position.level}</p>
+            </div>
+            
+            ${position.employee ? `
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Empleado Actual</label>
+                    <div class="flex items-center space-x-3 mt-2">
+                        ${position.employee.photo ? 
+                            `<img src="${position.employee.photo}" alt="${position.employee.name}" class="w-12 h-12 rounded-full">` :
+                            `<div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user text-gray-400"></i>
+                            </div>`
+                        }
+                        <div>
+                            <p class="font-medium text-gray-900">${position.employee.name}</p>
+                            <p class="text-sm text-gray-600">${position.employee.employee_id}</p>
+                            <p class="text-sm text-gray-600">${position.employee.email}</p>
+                        </div>
+                    </div>
+                </div>
+            ` : `
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+                        <span class="text-red-800 font-medium">Posición Vacante</span>
+                    </div>
+                    <p class="text-red-700 text-sm mt-1">Esta posición no tiene empleado asignado</p>
+                </div>
+            `}
+            
+            <div class="flex space-x-3 pt-4">
+                <button onclick="closeModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Cerrar
+                </button>
+                <a href="/admin/organizational/position/${position.id}/change/" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-center">
+                    Editar
+                </a>
+            </div>
+        </div>
+    `;
+    
+    modal.classList.remove('hidden');
+}
+
+// Cerrar modal
+function closeModal() {
+    document.getElementById('position-modal').classList.add('hidden');
+}
+
+// Centrar vista
+function centerView() {
+    // Implementar lógica de centrado
+    panX = 0;
+    panY = 0;
+    currentZoom = 1;
+    applyTransform();
+}
+
+// Aplicar transformación
+function applyTransform() {
+    const container = document.getElementById('org-chart');
+    container.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
+}
+
+// Mostrar error
+function showError(message) {
+    const loading = document.getElementById('loading');
+    loading.innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-exclamation-triangle text-red-500 text-3xl mb-4"></i>
+            <p class="text-red-600">${message}</p>
+            <button onclick="loadOrganigramData()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Reintentar
+            </button>
+        </div>
+    `;
+}
+
+// Event listeners
+document.getElementById('close-modal').addEventListener('click', closeModal);
+document.getElementById('close-help-modal').addEventListener('click', closeHelpModal);
+document.getElementById('help-btn').addEventListener('click', showHelpModal);
+document.getElementById('refresh-btn').addEventListener('click', loadOrganigramData);
+document.getElementById('center-btn').addEventListener('click', centerView);
+
+// Funciones para modal de ayuda
+function showHelpModal() {
+    document.getElementById('help-modal').classList.remove('hidden');
+}
+
+function closeHelpModal() {
+    document.getElementById('help-modal').classList.add('hidden');
+}
+
+// Zoom controls
+document.getElementById('zoom-in').addEventListener('click', () => {
+    currentZoom = Math.min(currentZoom * 1.2, 3);
+    applyTransform();
+});
+
+document.getElementById('zoom-out').addEventListener('click', () => {
+    currentZoom = Math.max(currentZoom / 1.2, 0.3);
+    applyTransform();
+});
+
+document.getElementById('zoom-reset').addEventListener('click', () => {
+    currentZoom = 1;
+    applyTransform();
+});
+
+// Filtro por departamento
+document.getElementById('department-filter').addEventListener('change', function() {
+    const selectedDept = this.value;
+    const nodes = document.querySelectorAll('.org-node');
+    
+    nodes.forEach(node => {
+        const positionId = parseInt(node.dataset.positionId);
+        const position = orgData.find(p => p.id === positionId);
+        
+        if (!selectedDept || position.department === selectedDept) {
+            node.style.display = 'block';
+        } else {
+            node.style.display = 'none';
+        }
+    });
+});
+
+// Función para hacer draggable
+function makeDraggable(node, position) {
+    let isDragging = false;
+    let startX, startY, initialX, initialY;
+    
+    node.style.cursor = 'move';
+    node.title = 'Arrastra para mover posición';
+    
+    node.addEventListener('mousedown', function(e) {
+        if (e.target.closest('button') || e.target.closest('a')) return;
+        
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        initialX = position.x_position;
+        initialY = position.y_position;
+        
+        node.style.zIndex = '1000';
+        node.style.opacity = '0.8';
+        
+        e.preventDefault();
+    });
+    
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+        
+        const newX = initialX + deltaX;
+        const newY = initialY + deltaY;
+        
+        node.style.left = newX + 'px';
+        node.style.top = newY + 'px';
+        
+        position.x_position = newX;
+        position.y_position = newY;
+    });
+    
+    document.addEventListener('mouseup', function() {
+        if (!isDragging) return;
+        
+        isDragging = false;
+        node.style.zIndex = '10';
+        node.style.opacity = '1';
+        
+        // Guardar nueva posición
+        savePositionCoordinates(position.id, position.x_position, position.y_position);
+        
+        // Re-renderizar conexiones
+        setTimeout(() => {
+            const lines = document.querySelectorAll('.org-line');
+            lines.forEach(line => line.remove());
+            renderConnections();
+        }, 100);
+    });
+}
+
+// Guardar coordenadas de posición
+function savePositionCoordinates(positionId, x, y) {
+    fetch('/organizational/api/save-positions/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            positions: [{
+                id: positionId,
+                x: x,
+                y: y
+            }]
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Posición guardada:', data.message);
+        } else {
+            console.error('Error al guardar:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+// Función para búsqueda
+function searchEmployees(query) {
+    const nodes = document.querySelectorAll('.org-node');
+    
+    nodes.forEach(node => {
+        const positionId = parseInt(node.dataset.positionId);
+        const position = orgData.find(p => p.id === positionId);
+        
+        const searchText = (
+            position.title + ' ' + 
+            position.department + ' ' + 
+            (position.employee ? position.employee.name + ' ' + position.employee.employee_id : '')
+        ).toLowerCase();
+        
+        if (!query || searchText.includes(query.toLowerCase())) {
+            node.style.display = 'block';
+            node.style.opacity = '1';
+        } else {
+            node.style.opacity = '0.3';
+        }
+    });
+}
+
+// Función para exportar a PNG
+function exportToPNG() {
+    const container = document.getElementById('org-chart');
+    
+    // Mostrar indicador de carga
+    const exportBtn = event.target.closest('button');
+    const originalText = exportBtn.innerHTML;
+    exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    exportBtn.disabled = true;
+    
+    // Usar html2canvas para capturar el organigrama
+    if (typeof html2canvas !== 'undefined') {
+        // Ocultar controles temporalmente
+        const controls = document.querySelectorAll('.org-controls, .zoom-controls');
+        controls.forEach(ctrl => ctrl.style.display = 'none');
+        
+        html2canvas(container, {
+            backgroundColor: '#ffffff',
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            width: container.scrollWidth,
+            height: container.scrollHeight
+        }).then(canvas => {
+            // Restaurar controles
+            controls.forEach(ctrl => ctrl.style.display = 'flex');
+            
+            // Crear enlace de descarga
+            const link = document.createElement('a');
+            const now = new Date();
+            const timestamp = now.toISOString().slice(0, 19).replace(/:/g, '-');
+            link.download = `organigrama-icasa-${timestamp}.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            
+            // Descargar
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Mostrar mensaje de éxito
+            showNotification('Organigrama exportado exitosamente', 'success');
+        }).catch(error => {
+            console.error('Error al exportar:', error);
+            showNotification('Error al exportar organigrama', 'error');
+            controls.forEach(ctrl => ctrl.style.display = 'flex');
+        }).finally(() => {
+            // Restaurar botón
+            exportBtn.innerHTML = originalText;
+            exportBtn.disabled = false;
+        });
+    } else {
+        showNotification('Librería de exportación no disponible', 'error');
+        exportBtn.innerHTML = originalText;
+        exportBtn.disabled = false;
+    }
+}
+
+// Función para mostrar notificaciones
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ${
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'error' ? 'bg-red-500 text-white' :
+        'bg-blue-500 text-white'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center space-x-2">
+            <i class="fas ${
+                type === 'success' ? 'fa-check-circle' :
+                type === 'error' ? 'fa-exclamation-circle' :
+                'fa-info-circle'
+            }"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remover después de 3 segundos
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Función para obtener CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Función para mostrar historial
+function showVersionHistory() {
+    // Implementar modal de historial
+    alert('Función de historial en desarrollo');
+}
+</script>
+{% endblock %}

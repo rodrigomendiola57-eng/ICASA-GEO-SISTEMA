@@ -1,0 +1,91 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}{{ chart.name }} - ICASA-GEO{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-sitemap text-success me-2"></i>{{ chart.name }}</h2>
+                    {% if chart.is_main %}
+                        <span class="badge bg-warning"><i class="fas fa-star me-1"></i>Organigrama Principal</span>
+                    {% endif %}
+                </div>
+                <div>
+                    <a href="{% url 'organizational:chart_list' %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left me-1"></i>Volver
+                    </a>
+                    <button class="btn btn-success">
+                        <i class="fas fa-edit me-1"></i>Editar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-sitemap me-2"></i>Organigrama</h5>
+                </div>
+                <div class="card-body">
+                    <div id="chart-container" class="text-center py-5">
+                        <i class="fas fa-sitemap fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Visualizador de Organigrama</h5>
+                        <p class="text-muted">Aquí se mostrará el organigrama interactivo</p>
+                        <small class="text-muted">Funcionalidad en desarrollo</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Estado</label>
+                        <div>
+                            {% if chart.status == 'approved' %}
+                                <span class="badge bg-success">Aprobado</span>
+                            {% elif chart.status == 'review' %}
+                                <span class="badge bg-warning">En Revisión</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Borrador</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if chart.description %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Descripción</label>
+                        <p>{{ chart.description }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Creado por</label>
+                        <p>{{ chart.created_by.get_full_name|default:chart.created_by.username }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Fecha de creación</label>
+                        <p>{{ chart.created_at|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Última actualización</label>
+                        <p>{{ chart.updated_at|date:"d/m/Y H:i" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

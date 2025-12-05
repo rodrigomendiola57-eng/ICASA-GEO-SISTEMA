@@ -1,0 +1,494 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Crear Manual - ICASA{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header Específico -->
+    <div class="bg-white border-b border-gray-200 shadow-sm">
+        <div class="px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-book text-purple-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Manuales ICASA</h1>
+                        <p class="text-gray-600">Documentación completa de procesos y procedimientos</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <button onclick="history.back()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                        <i class="fas fa-arrow-left mr-2"></i>Volver
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-6">
+        <!-- Asistente de Creación -->
+        <div class="max-w-5xl mx-auto">
+            <!-- Paso 1: Seleccionar Tipo de Manual -->
+            <div id="step1" class="bg-white rounded-xl shadow-sm p-6 mb-6">
+                <h2 class="text-xl font-semibold mb-4 flex items-center">
+                    <span class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center mr-3 text-sm">1</span>
+                    Selecciona el tipo de manual
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-green-500 cursor-pointer transition-colors" onclick="selectManualType('operativo')">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-cogs text-2xl text-green-600 mr-3"></i>
+                            <h3 class="font-semibold">Manual Operativo</h3>
+                        </div>
+                        <p class="text-sm text-gray-600">Procesos core del negocio de seguros</p>
+                        <div class="mt-3 text-xs text-green-600">
+                            ✓ Suscripción ✓ Siniestros ✓ Cobranza ✓ Renovaciones
+                        </div>
+                    </div>
+                    
+                    <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-green-500 cursor-pointer transition-colors" onclick="selectManualType('gestion')">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-shield-alt text-2xl text-green-600 mr-3"></i>
+                            <h3 class="font-semibold">Manual de Gestión</h3>
+                        </div>
+                        <p class="text-sm text-gray-600">Control, calidad y cumplimiento</p>
+                        <div class="mt-3 text-xs text-green-600">
+                            ✓ ISO 9001 ✓ Riesgos ✓ Auditoría ✓ Compliance
+                        </div>
+                    </div>
+                    
+                    <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-green-500 cursor-pointer transition-colors" onclick="selectManualType('rrhh')">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-users text-2xl text-green-600 mr-3"></i>
+                            <h3 class="font-semibold">Manual de RRHH</h3>
+                        </div>
+                        <p class="text-sm text-gray-600">Gestión del talento humano</p>
+                        <div class="mt-3 text-xs text-green-600">
+                            ✓ Empleado ✓ Capacitación ✓ Evaluación ✓ Beneficios
+                        </div>
+                    </div>
+                    
+                    <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-green-500 cursor-pointer transition-colors" onclick="selectManualType('tecnologia')">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-laptop-code text-2xl text-green-600 mr-3"></i>
+                            <h3 class="font-semibold">Manual Tecnológico</h3>
+                        </div>
+                        <p class="text-sm text-gray-600">Sistemas y seguridad informática</p>
+                        <div class="mt-3 text-xs text-green-600">
+                            ✓ Sistemas ✓ Seguridad IT ✓ Backup ✓ Soporte
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paso 2: Información Básica -->
+            <div id="step2" class="hidden bg-white rounded-xl shadow-sm p-6 mb-6">
+                <h2 class="text-xl font-semibold mb-4 flex items-center">
+                    <span class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center mr-3 text-sm">2</span>
+                    Información del manual
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Título del Manual <span class="text-red-500">*</span></label>
+                        <input type="text" id="manualTitle" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" 
+                               placeholder="Ej: Manual de Suscripción ICASA">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Código del Manual <span class="text-red-500">*</span></label>
+                        <input type="text" id="manualCode" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" 
+                               placeholder="Ej: MAN-SUS-001">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Versión</label>
+                        <input type="text" id="manualVersion" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" 
+                               placeholder="Ej: 1.0" value="1.0">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Frecuencia de Revisión</label>
+                        <select id="manualFrequency" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                            <option value="trimestral">Trimestral</option>
+                            <option value="semestral">Semestral</option>
+                            <option value="anual" selected>Anual</option>
+                            <option value="bianual">Cada 2 años</option>
+                        </select>
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Objetivo del Manual <span class="text-red-500">*</span></label>
+                        <textarea id="manualObjective" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" 
+                                  placeholder="Describe el propósito y objetivo principal de este manual..."></textarea>
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Alcance y Aplicación</label>
+                        <textarea id="manualScope" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" 
+                                  placeholder="Define a quién aplica este manual y en qué situaciones..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between mt-6">
+                    <button onclick="showStep(1)" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                        <i class="fas fa-arrow-left mr-2"></i>Anterior
+                    </button>
+                    <button onclick="showStep(3)" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                        Continuar <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Paso 3: Contenido Específico -->
+            <div id="step3" class="hidden bg-white rounded-xl shadow-sm p-6">
+                <h2 class="text-xl font-semibold mb-4 flex items-center">
+                    <span class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center mr-3 text-sm">3</span>
+                    Estructura del manual
+                </h2>
+                
+                <!-- Campos Específicos por Tipo -->
+                
+                <!-- Manual Operativo -->
+                <div id="operativo-fields" class="hidden">
+                    <div class="grid grid-cols-1 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Proceso Principal</label>
+                            <select id="procesoOperativo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                <option value="suscripcion">Suscripción de Pólizas</option>
+                                <option value="siniestros">Gestión de Siniestros</option>
+                                <option value="cobranza">Cobranza y Cartera</option>
+                                <option value="renovaciones">Renovaciones</option>
+                                <option value="atencion-cliente">Atención al Cliente</option>
+                                <option value="ventas">Proceso de Ventas</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Responsables del Proceso</label>
+                            <div id="responsables-container">
+                                <div class="flex items-center mb-2">
+                                    <input type="text" placeholder="Cargo/Puesto" class="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500">
+                                    <input type="text" placeholder="Responsabilidad específica" class="flex-2 px-3 py-2 border-t border-b border-gray-300 focus:ring-2 focus:ring-green-500">
+                                    <button type="button" onclick="addResponsable()" class="px-3 py-2 bg-green-500 text-white rounded-r-lg hover:bg-green-600">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" onclick="addResponsable()" class="text-sm text-green-600 hover:text-green-800">
+                                <i class="fas fa-plus mr-1"></i>Agregar responsable
+                            </button>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Procedimientos Paso a Paso</label>
+                            <div id="procedimientos-container">
+                                <div class="border border-gray-200 rounded-lg p-4 mb-4">
+                                    <input type="text" placeholder="Nombre del procedimiento" class="w-full mb-3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                    <textarea placeholder="Descripción detallada del procedimiento..." rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"></textarea>
+                                    <button type="button" onclick="this.parentElement.remove()" class="mt-2 text-sm text-red-600 hover:text-red-800">
+                                        <i class="fas fa-trash mr-1"></i>Eliminar procedimiento
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" onclick="addProcedimiento()" class="text-sm text-green-600 hover:text-green-800">
+                                <i class="fas fa-plus mr-1"></i>Agregar procedimiento
+                            </button>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Indicadores de Gestión (KPIs)</label>
+                            <div id="kpis-container">
+                                <div class="grid grid-cols-12 gap-2 mb-2">
+                                    <input type="text" placeholder="Nombre del KPI" class="col-span-5 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                    <input type="text" placeholder="Fórmula" class="col-span-4 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                    <input type="text" placeholder="Meta" class="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                    <button type="button" onclick="addKPI()" class="col-span-1 px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" onclick="addKPI()" class="text-sm text-green-600 hover:text-green-800">
+                                <i class="fas fa-plus mr-1"></i>Agregar KPI
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Manual de Gestión -->
+                <div id="gestion-fields" class="hidden">
+                    <div class="grid grid-cols-1 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Sistema de Gestión</label>
+                            <select id="tipoGestion" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                <option value="calidad">Sistema de Gestión de Calidad (ISO 9001)</option>
+                                <option value="riesgos">Gestión Integral de Riesgos</option>
+                                <option value="auditoria">Auditoría Interna</option>
+                                <option value="compliance">Compliance y Cumplimiento</option>
+                                <option value="continuidad">Continuidad del Negocio</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Normativas Aplicables</label>
+                            <div id="normativas-container">
+                                <div class="flex items-center mb-2">
+                                    <input type="text" placeholder="Nombre de la normativa" class="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500">
+                                    <input type="text" placeholder="Artículo/Sección" class="flex-1 px-3 py-2 border-t border-b border-gray-300 focus:ring-2 focus:ring-green-500">
+                                    <button type="button" onclick="addNormativa()" class="px-3 py-2 bg-green-500 text-white rounded-r-lg hover:bg-green-600">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" onclick="addNormativa()" class="text-sm text-green-600 hover:text-green-800">
+                                <i class="fas fa-plus mr-1"></i>Agregar normativa
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Manual de RRHH -->
+                <div id="rrhh-fields" class="hidden">
+                    <div class="grid grid-cols-1 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Área de RRHH</label>
+                            <select id="areaRRHH" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                <option value="empleado">Manual del Empleado</option>
+                                <option value="capacitacion">Capacitación y Desarrollo</option>
+                                <option value="evaluacion">Evaluación de Desempeño</option>
+                                <option value="beneficios">Beneficios y Compensaciones</option>
+                                <option value="reclutamiento">Reclutamiento y Selección</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Políticas Incluidas</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" class="mr-2"> Código de Conducta
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" class="mr-2"> Horarios de Trabajo
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" class="mr-2"> Vacaciones y Permisos
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" class="mr-2"> Seguridad y Salud
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" class="mr-2"> Disciplina y Sanciones
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" class="mr-2"> Desarrollo Profesional
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Manual Tecnológico -->
+                <div id="tecnologia-fields" class="hidden">
+                    <div class="grid grid-cols-1 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Área Tecnológica</label>
+                            <select id="areaTecnologia" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                <option value="sistemas">Administración de Sistemas</option>
+                                <option value="seguridad">Seguridad Informática</option>
+                                <option value="backup">Backup y Recuperación</option>
+                                <option value="soporte">Soporte Técnico</option>
+                                <option value="desarrollo">Desarrollo de Software</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Sistemas Involucrados</label>
+                            <div id="sistemas-container">
+                                <div class="flex items-center mb-2">
+                                    <input type="text" placeholder="Nombre del sistema" class="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500">
+                                    <input type="text" placeholder="Versión" class="flex-1 px-3 py-2 border-t border-b border-gray-300 focus:ring-2 focus:ring-green-500">
+                                    <button type="button" onclick="addSistema()" class="px-3 py-2 bg-green-500 text-white rounded-r-lg hover:bg-green-600">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" onclick="addSistema()" class="text-sm text-green-600 hover:text-green-800">
+                                <i class="fas fa-plus mr-1"></i>Agregar sistema
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between mt-8">
+                    <button onclick="showStep(2)" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                        <i class="fas fa-arrow-left mr-2"></i>Anterior
+                    </button>
+                    <button onclick="createManual()" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600">
+                        <i class="fas fa-save mr-2"></i>Crear Manual
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedManualType = null;
+
+function selectManualType(type) {
+    selectedManualType = type;
+    
+    const titles = {
+        'operativo': 'Manual Operativo ICASA',
+        'gestion': 'Manual de Gestión ICASA', 
+        'rrhh': 'Manual de Recursos Humanos ICASA',
+        'tecnologia': 'Manual Tecnológico ICASA'
+    };
+    
+    document.getElementById('manualTitle').value = titles[type] || '';
+    
+    const codes = {
+        'operativo': 'MAN-OP-001',
+        'gestion': 'MAN-GE-001',
+        'rrhh': 'MAN-RH-001',
+        'tecnologia': 'MAN-TI-001'
+    };
+    
+    document.getElementById('manualCode').value = codes[type] || '';
+    
+    showStep(2);
+}
+
+function showStep(step) {
+    document.getElementById('step1').classList.add('hidden');
+    document.getElementById('step2').classList.add('hidden');
+    document.getElementById('step3').classList.add('hidden');
+    
+    document.getElementById(`step${step}`).classList.remove('hidden');
+    
+    if (step === 3 && selectedManualType) {
+        // Ocultar todos los campos
+        const fieldTypes = ['operativo', 'gestion', 'rrhh', 'tecnologia'];
+        fieldTypes.forEach(type => {
+            const element = document.getElementById(`${type}-fields`);
+            if (element) element.classList.add('hidden');
+        });
+        
+        // Mostrar campos del tipo seleccionado
+        const selectedFields = document.getElementById(`${selectedManualType}-fields`);
+        if (selectedFields) {
+            selectedFields.classList.remove('hidden');
+        }
+    }
+}
+
+// Funciones para campos dinámicos
+function addResponsable() {
+    const container = document.getElementById('responsables-container');
+    const newResp = document.createElement('div');
+    newResp.className = 'flex items-center mb-2';
+    newResp.innerHTML = `
+        <input type="text" placeholder="Cargo/Puesto" class="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500">
+        <input type="text" placeholder="Responsabilidad específica" class="flex-2 px-3 py-2 border-t border-b border-gray-300 focus:ring-2 focus:ring-green-500">
+        <button type="button" onclick="this.parentElement.remove()" class="px-3 py-2 bg-red-500 text-white rounded-r-lg hover:bg-red-600">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    container.appendChild(newResp);
+}
+
+function addProcedimiento() {
+    const container = document.getElementById('procedimientos-container');
+    const newProc = document.createElement('div');
+    newProc.className = 'border border-gray-200 rounded-lg p-4 mb-4';
+    newProc.innerHTML = `
+        <input type="text" placeholder="Nombre del procedimiento" class="w-full mb-3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+        <textarea placeholder="Descripción detallada del procedimiento..." rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"></textarea>
+        <button type="button" onclick="this.parentElement.remove()" class="mt-2 text-sm text-red-600 hover:text-red-800">
+            <i class="fas fa-trash mr-1"></i>Eliminar procedimiento
+        </button>
+    `;
+    container.appendChild(newProc);
+}
+
+function addKPI() {
+    const container = document.getElementById('kpis-container');
+    const newKPI = document.createElement('div');
+    newKPI.className = 'grid grid-cols-12 gap-2 mb-2';
+    newKPI.innerHTML = `
+        <input type="text" placeholder="Nombre del KPI" class="col-span-5 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+        <input type="text" placeholder="Fórmula" class="col-span-4 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+        <input type="text" placeholder="Meta" class="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+        <button type="button" onclick="this.parentElement.remove()" class="col-span-1 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    container.appendChild(newKPI);
+}
+
+function addNormativa() {
+    const container = document.getElementById('normativas-container');
+    const newNorm = document.createElement('div');
+    newNorm.className = 'flex items-center mb-2';
+    newNorm.innerHTML = `
+        <input type="text" placeholder="Nombre de la normativa" class="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500">
+        <input type="text" placeholder="Artículo/Sección" class="flex-1 px-3 py-2 border-t border-b border-gray-300 focus:ring-2 focus:ring-green-500">
+        <button type="button" onclick="this.parentElement.remove()" class="px-3 py-2 bg-red-500 text-white rounded-r-lg hover:bg-red-600">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    container.appendChild(newNorm);
+}
+
+function addSistema() {
+    const container = document.getElementById('sistemas-container');
+    const newSist = document.createElement('div');
+    newSist.className = 'flex items-center mb-2';
+    newSist.innerHTML = `
+        <input type="text" placeholder="Nombre del sistema" class="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500">
+        <input type="text" placeholder="Versión" class="flex-1 px-3 py-2 border-t border-b border-gray-300 focus:ring-2 focus:ring-green-500">
+        <button type="button" onclick="this.parentElement.remove()" class="px-3 py-2 bg-red-500 text-white rounded-r-lg hover:bg-red-600">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    container.appendChild(newSist);
+}
+
+function createManual() {
+    // Validar campos obligatorios
+    const title = document.getElementById('manualTitle').value.trim();
+    const code = document.getElementById('manualCode').value.trim();
+    const objective = document.getElementById('manualObjective').value.trim();
+    
+    if (!title || !code || !objective) {
+        alert('⚠️ Por favor completa todos los campos obligatorios');
+        return;
+    }
+    
+    const data = {
+        type: selectedManualType,
+        title: title,
+        code: code,
+        version: document.getElementById('manualVersion').value,
+        frequency: document.getElementById('manualFrequency').value,
+        objective: objective,
+        scope: document.getElementById('manualScope').value
+    };
+    
+    // Simular guardado
+    const loadingBtn = document.querySelector('button[onclick="createManual()"]');
+    const originalText = loadingBtn.innerHTML;
+    loadingBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creando...';
+    loadingBtn.disabled = true;
+    
+    setTimeout(() => {
+        alert('✅ Manual creado exitosamente\n\nTipo: ' + selectedManualType + '\nTítulo: ' + data.title);
+        window.location.href = '/manual/';
+    }, 2000);
+}
+</script>
+{% endblock %}

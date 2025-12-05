@@ -1,0 +1,263 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Plantillas - {{ category.name }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 shadow-sm">
+        <div class="px-6 py-4">
+            <!-- Breadcrumb -->
+            <nav class="flex mb-4" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                    <li class="inline-flex items-center">
+                        <a href="{% url 'knowledge_base:dashboard' %}" class="text-gray-700 hover:text-blue-600">
+                            <i class="fas fa-home mr-2"></i>Manual
+                        </a>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                            <a href="{% url 'knowledge_base:category_detail' category.slug %}" class="text-gray-700 hover:text-blue-600">
+                                {{ category.name }}
+                            </a>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                            <span class="text-gray-500">Plantillas</span>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+            
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-16 h-16 rounded-lg flex items-center justify-center mr-4" 
+                         style="background-color: {{ category.color }}20; color: {{ category.color }};">
+                        <i class="fas fa-file-alt text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">Plantillas - {{ category.name }}</h1>
+                        <p class="text-gray-600 mt-1">Selecciona una plantilla para crear documentos estandarizados</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <button onclick="showGuide()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-question-circle mr-2"></i>Guía de Uso
+                    </button>
+                    
+                    <a href="{% url 'knowledge_base:document_create' %}?category={{ category.slug }}" 
+                       class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-edit mr-2"></i>Documento en Blanco
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-6">
+        <!-- Plantillas Disponibles -->
+        {% if templates %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for template_key, template in templates.items %}
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg transition-all cursor-pointer group"
+                         onclick="selectTemplate('{{ template_key }}')">
+                        
+                        <!-- Preview del Template -->
+                        <div class="h-32 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-t-xl flex items-center justify-center relative overflow-hidden">
+                            <i class="{{ template.icon }} text-4xl text-blue-600 group-hover:scale-110 transition-transform"></i>
+                            
+                            <!-- Badge de Categoría -->
+                            <div class="absolute top-3 right-3">
+                                <span class="px-2 py-1 bg-white text-blue-600 text-xs rounded-full font-medium">
+                                    {{ category.name }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Información del Template -->
+                        <div class="p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                                {{ template.name }}
+                            </h3>
+                            
+                            <p class="text-sm text-gray-600 mb-4 line-clamp-3">
+                                {{ template.description }}
+                            </p>
+                            
+                            <!-- Características del Template -->
+                            <div class="space-y-2 mb-4">
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    Estructura predefinida
+                                </div>
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    Campos obligatorios incluidos
+                                </div>
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    Formato estándar ICASA
+                                </div>
+                            </div>
+                            
+                            <!-- Acciones -->
+                            <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+                                <button onclick="event.stopPropagation(); previewTemplate('{{ template_key }}')" 
+                                        class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                    <i class="fas fa-eye mr-1"></i>Vista Previa
+                                </button>
+                                
+                                <button onclick="event.stopPropagation(); selectTemplate('{{ template_key }}')" 
+                                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                                    <i class="fas fa-plus mr-1"></i>Usar Plantilla
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <!-- Estado vacío -->
+            <div class="text-center py-16">
+                <i class="fas fa-file-alt text-6xl text-gray-300 mb-6"></i>
+                <h3 class="text-2xl font-semibold text-gray-900 mb-4">No hay plantillas disponibles</h3>
+                <p class="text-gray-600 mb-8 max-w-md mx-auto">
+                    Aún no se han creado plantillas específicas para esta categoría. 
+                    Puedes crear un documento en blanco o solicitar plantillas personalizadas.
+                </p>
+                
+                <div class="flex items-center justify-center space-x-4">
+                    <a href="{% url 'knowledge_base:document_create' %}?category={{ category.slug }}" 
+                       class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-edit mr-2"></i>Crear Documento en Blanco
+                    </a>
+                    
+                    <button onclick="requestTemplate()" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Solicitar Plantilla
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Guía de Ayuda -->
+        <div class="mt-12 bg-blue-50 rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-blue-900 mb-4 flex items-center">
+                <i class="fas fa-lightbulb text-blue-600 mr-2"></i>
+                Consejos para {{ category.name }}
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-blue-800 mb-2">📝 Antes de empezar:</h4>
+                    <ul class="text-sm text-blue-700 space-y-1">
+                        {% if category.slug == 'informacion-corporativa' %}
+                            <li>• Revisa la información corporativa actual</li>
+                            <li>• Consulta con Gerencia General</li>
+                            <li>• Verifica datos con Recursos Humanos</li>
+                        {% elif category.slug == 'marco-legal' %}
+                            <li>• Consulta las normativas vigentes</li>
+                            <li>• Revisa actualizaciones de SUGESE</li>
+                            <li>• Coordina con el área legal</li>
+                        {% elif category.slug == 'politicas-organizacionales' %}
+                            <li>• Define el alcance de la política</li>
+                            <li>• Identifica a los responsables</li>
+                            <li>• Establece indicadores de cumplimiento</li>
+                        {% elif category.slug == 'manuales-operativos' %}
+                            <li>• Mapea el proceso actual</li>
+                            <li>• Identifica puntos de control</li>
+                            <li>• Define responsabilidades claras</li>
+                        {% else %}
+                            <li>• Planifica la estructura del documento</li>
+                            <li>• Recopila la información necesaria</li>
+                            <li>• Define los objetivos del documento</li>
+                        {% endif %}
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-blue-800 mb-2">✅ Mejores prácticas:</h4>
+                    <ul class="text-sm text-blue-700 space-y-1">
+                        <li>• Usa un lenguaje claro y directo</li>
+                        <li>• Incluye ejemplos cuando sea necesario</li>
+                        <li>• Revisa la ortografía y gramática</li>
+                        <li>• Solicita revisión antes de publicar</li>
+                        <li>• Mantén el documento actualizado</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Vista Previa -->
+<div id="previewModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+        <div class="flex items-center justify-between p-6 border-b">
+            <h3 id="previewTitle" class="text-lg font-semibold text-gray-900">Vista Previa</h3>
+            <button onclick="closePreview()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="p-6 overflow-y-auto max-h-[70vh]">
+            <div id="previewContent" class="prose max-w-none">
+                <!-- Contenido de la plantilla -->
+            </div>
+        </div>
+        
+        <div class="flex items-center justify-end space-x-3 p-6 border-t bg-gray-50">
+            <button onclick="closePreview()" class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                Cerrar
+            </button>
+            <button onclick="useCurrentTemplate()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                <i class="fas fa-plus mr-2"></i>Usar esta Plantilla
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentTemplate = null;
+
+function selectTemplate(templateKey) {
+    // Redirigir al editor con la plantilla seleccionada
+    window.location.href = `{% url 'knowledge_base:document_create' %}?category={{ category.slug }}&template=${templateKey}`;
+}
+
+function previewTemplate(templateKey) {
+    currentTemplate = templateKey;
+    
+    // Obtener contenido de la plantilla (simulado)
+    const templates = {{ templates_json|safe }};
+    const template = templates[templateKey];
+    
+    document.getElementById('previewTitle').textContent = `Vista Previa: ${template.name}`;
+    document.getElementById('previewContent').innerHTML = template.content;
+    document.getElementById('previewModal').classList.remove('hidden');
+}
+
+function closePreview() {
+    document.getElementById('previewModal').classList.add('hidden');
+    currentTemplate = null;
+}
+
+function useCurrentTemplate() {
+    if (currentTemplate) {
+        selectTemplate(currentTemplate);
+    }
+}
+
+function showGuide() {
+    alert('🚧 Guía interactiva en desarrollo\n\nPor ahora puedes usar los consejos mostrados en la parte inferior de la página.');
+}
+
+function requestTemplate() {
+    alert('📧 Solicitud enviada\n\nTu solicitud de plantilla personalizada ha sido enviada al equipo de desarrollo. Te contactaremos pronto.');
+}
+</script>
+{% endblock %}
