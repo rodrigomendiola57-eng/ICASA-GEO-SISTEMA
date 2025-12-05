@@ -13,6 +13,10 @@ services:
         value: "icasa-geo-sistema.onrender.com"
       - key: SECRET_KEY
         generateValue: true
+    databases:
+      - fromDatabase:
+          name: icasa-geo-db
+          property: DATABASE_URL
 
 databases:
   - name: icasa-geo-db

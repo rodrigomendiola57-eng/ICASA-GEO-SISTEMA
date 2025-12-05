@@ -59,12 +59,14 @@ TEMPLATES = [
 ]
 
 # Database configuration
-if os.getenv('DATABASE_URL'):
+DATABASE_URL = os.getenv('DATABASE_URL')
+if DATABASE_URL:
     # Render PostgreSQL configuration
     import dj_database_url
     DATABASES = {
-        'default': dj_database_url.parse(os.getenv('DATABASE_URL'))
+        'default': dj_database_url.parse(DATABASE_URL)
     }
+    print(f"Using PostgreSQL: {DATABASE_URL[:50]}...")
 else:
     # Local SQLite configuration
     DATABASES = {
@@ -73,6 +75,7 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+    print("Using SQLite for development")
 
 LANGUAGE_CODE = 'es-es'
 TIME_ZONE = 'America/Guatemala'
